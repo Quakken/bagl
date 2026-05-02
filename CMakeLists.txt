@@ -9,6 +9,8 @@ include(FetchContent)
 # Build options
 option(BAGL_BUILD_EXAMPLES OFF "Whether to build bagl example projects")
 
+# Build dependencies
+add_subdirectory(thirdparty)
 # Build the main library
 add_subdirectory(src)
 

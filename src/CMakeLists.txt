@@ -34,9 +34,11 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glfw)
+add_library(bagl::glfw ALIAS glfw)
 
 # Link against dependencies
 target_link_libraries(bagl
   PRIVATE
-    glfw
+    bagl::glfw
+    bagl::glad
 )
