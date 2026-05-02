@@ -1,7 +1,7 @@
 add_library(bagl)
 add_library(bagl::bagl ALIAS bagl)
 
-set(BAGL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include/bagl")
+set(BAGL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
 set(BAGL_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")
 
 # Specify sources
@@ -14,7 +14,7 @@ target_sources(bagl
     BASE_DIRS
       "${BAGL_INCLUDE_DIR}"
     FILES
-      "${BAGL_INCLUDE_DIR}/foo.h"
+      "${BAGL_INCLUDE_DIR}/bagl/foo.h"
 )
 target_include_directories(bagl
   PUBLIC

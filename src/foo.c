@@ -1,4 +1,4 @@
-#include "foo.h"
+#include "bagl/foo.h"
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
