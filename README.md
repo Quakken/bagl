@@ -22,7 +22,7 @@ Bagl is a small 3D graphics libary written in C. As an abstraction of OpenGL, it
 # Building from Source
 
 ### Requirements
-- CMake v4.3
+- CMake v3.50
 - Your favorite C compiler
 
 From the project's root directory, run the following commands:
