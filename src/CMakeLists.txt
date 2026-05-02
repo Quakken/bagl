@@ -8,6 +8,8 @@ set(BAGL_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")
 target_sources(bagl
   PRIVATE
     "${BAGL_SOURCE_DIR}/foo.c"
+    "${BAGL_SOURCE_DIR}/internal/stb_image.c"
+    "${BAGL_SOURCE_DIR}/internal/stb_image.h"
   PUBLIC
     FILE_SET bagl_headers
     TYPE HEADERS
