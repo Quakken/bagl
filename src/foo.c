@@ -8,6 +8,6 @@ int doThings() {
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   glfwInit();
 
-  uint8_t *imageData = stbi_load("asset.png", NULL, NULL, NULL, 0);
+  uint8_t* imageData = stbi_load("asset.png", NULL, NULL, NULL, 0);
   return 0;
 }
