@@ -2,8 +2,7 @@
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
-
-#include "internal/stb_image.h"
+#include "stb/stb_image.h"
 
 int doThings() {
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
