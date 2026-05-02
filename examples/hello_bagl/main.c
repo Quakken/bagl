@@ -1,3 +1,12 @@
-#include "bagl/foo.h"
+#include "bagl/bagl.h"
+#include "stdlib.h"
 
-int main() { doThings(); }
+int main() {
+  baglInit();
+
+  BaglState* state = baglCreateState(NULL);
+  /* Render objects */
+  baglDestroyState(&state);
+
+  baglTerminate();
+}
