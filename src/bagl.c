@@ -15,7 +15,7 @@
 /* Initializes a BaglState based on configuration data */
 static void baglInitState(const BaglConfig* config, BaglState* state);
 
-/* Default function used by a bagl state to log a mesage. */
+/* Default function used by a bagl state to log a message. */
 static void baglLogFnDefault(BaglLogLevel level, const char* message);
 
 /* Converts a log level to a string. */
@@ -33,7 +33,6 @@ const static BaglConfig BAGL_CONFIG_DEFAULT = {
 void baglInit() {
   /* Initialize dependencies */
   glfwInit();
-  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 }
 
 BaglState* baglCreateState(const BaglConfig* config) {
@@ -63,6 +62,10 @@ BaglState* baglCreateState(const BaglConfig* config) {
 
   baglLog(state, INFO, "State created");
   return state;
+}
+
+void baglPollEvents() {
+  glfwPollEvents();
 }
 
 void baglDestroyState(BaglState** state) {

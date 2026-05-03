@@ -16,7 +16,7 @@ typedef struct BaglState BaglState;
  */
 typedef enum BaglWindowMode {
   BAGL_WINDOW_MODE_WINDOWED,
-  BAGL_wINDOW_MODE_FULLSCREEN,
+  BAGL_WINDOW_MODE_FULLSCREEN,
   BAGL_WINDOW_MODE_BORDERLESS,
 } BaglWindowMode;
 
@@ -53,17 +53,17 @@ int baglGetWindowWidth(const BaglState* state);
 int baglGetWindowHeight(const BaglState* state);
 
 /**
- * @brief Returns the width of a window's frame in pixels.
+ * @brief Returns the width of a window's viewport in pixels.
  * @param state State of the window to test.
  * @return Width of the window's frame, in pixels.
  */
-int baglGetFrameWidth(const BaglState* state);
+int baglGetViewportWidth(const BaglState* state);
 /**
- * @brief Returns the width of a window's frame in pixels.
+ * @brief Returns the width of a window's viewport in pixels.
  * @param state State of the window to test.
  * @return Height of the window's frame, in pixels.
  */
-int baglGetFrameHeight(const BaglState* state);
+int baglGetViewportHeight(const BaglState* state);
 
 /**
  * @brief Returns whether a state's window should close.

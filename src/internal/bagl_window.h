@@ -14,6 +14,10 @@ typedef struct GLFWwindow GLFWwindow;
 
 typedef struct BaglWindow {
   GLFWwindow* window;
+
+  /* Base width/height that the window will default to when changing modes */
+  int baseWidth;
+  int baseHeight;
 } BaglWindow;
 
 /**
