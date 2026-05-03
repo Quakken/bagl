@@ -1,5 +1,5 @@
+#include <stdlib.h>
 #include "bagl/bagl.h"
-#include "stdlib.h"
 
 int main() {
   baglInit();
