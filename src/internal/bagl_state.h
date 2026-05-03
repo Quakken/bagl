@@ -8,11 +8,14 @@
 #ifndef BAGL_BAGL_STATE_H
 #define BAGL_BAGL_STATE_H
 
-#include "bagl/bagl.h" /* BaglReallocateFn, BaglLogFn, BaglState */
+#include "bagl/bagl.h"   /* BaglReallocateFn, BaglLogFn, BaglState */
+#include "bagl/window.h" /* BaglWindow */
 
 struct BaglState {
   BaglReallocFn reallocFn;
   BaglLogFn logFn;
+
+  BaglWindow* window;
 };
 
 #endif

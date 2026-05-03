@@ -8,6 +8,7 @@ set(BAGL_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")
 target_sources(bagl
   PRIVATE
     "${BAGL_SOURCE_DIR}/bagl.c"
+    "${BAGL_SOURCE_DIR}/internal/bagl_window.h"
     "${BAGL_SOURCE_DIR}/internal/bagl_state.h"
     "${BAGL_SOURCE_DIR}/internal/utils.h"
   PUBLIC
@@ -17,6 +18,7 @@ target_sources(bagl
       "${BAGL_INCLUDE_DIR}"
     FILES
       "${BAGL_INCLUDE_DIR}/bagl/bagl.h"
+      "${BAGL_INCLUDE_DIR}/bagl/window.h"
 )
 target_include_directories(bagl
   PUBLIC

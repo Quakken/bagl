@@ -6,8 +6,9 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
-#include "internal/bagl_state.h" /* BaglState */
-#include "internal/utils.h"      /* baglLog */
+#include "internal/bagl_window.h" /* BaglWindow */
+#include "internal/bagl_state.h"  /* BaglState */
+#include "internal/utils.h"       /* baglLog */
 
 /* Forward */
 
@@ -24,7 +25,10 @@ static const char* baglLogLevelToStr(BaglLogLevel level);
 const static BaglConfig BAGL_CONFIG_DEFAULT = {
     .reallocFn = &realloc,
     .logFn = &baglLogFnDefault,
+    .windowConfig = NULL,
 };
+
+/* Definitions */
 
 void baglInit() {
   /* Initialize dependencies */
@@ -67,9 +71,14 @@ void baglDestroyState(BaglState** state) {
     return;
   }
 
+  BaglState* s = *state;
+
+  /* Destroy window */
+  baglDestroyWindow(s, &s->window);
+
   /* Free state memory */
-  baglLog(*state, INFO, "Destroying state");
-  (*state)->reallocFn(*state, 0);
+  baglLog(s, INFO, "Destroying state");
+  s->reallocFn(s, 0);
 
   *state = NULL;
 }
@@ -84,6 +93,7 @@ static void baglInitState(const BaglConfig* config, BaglState* state) {
   state->logFn = config->logFn;
   state->reallocFn =
       (config->reallocFn) ? config->reallocFn : BAGL_CONFIG_DEFAULT.reallocFn;
+  state->window = baglCreateWindow(state, config->windowConfig);
 }
 
 static void baglLogFnDefault(BaglLogLevel level, const char* message) {

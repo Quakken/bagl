@@ -7,6 +7,8 @@
 #ifndef BAGL_FOO_H
 #define BAGL_FOO_H
 
+#include "bagl/window.h" /* BaglWindowConfig */
+
 /**
  * TYPES
  */
@@ -54,6 +56,9 @@ typedef struct BaglConfig {
    * In the default configuration, messages are sent to stdout/stderr.
    */
   BaglLogFn logFn;
+
+  /* Configuration used to create the application's window */
+  const BaglWindowConfig* windowConfig;
 } BaglConfig;
 
 /**
@@ -79,6 +84,12 @@ void baglInit(void);
  * created.
  */
 BaglState* baglCreateState(const BaglConfig* config);
+
+/**
+ * @brief Processes all application events. This should be called once per
+ * frame.
+ */
+void baglPollEvents(void);
 
 /**
  * @brief Destroys a bagl state, invalidating it and releasing all associated
