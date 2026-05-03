@@ -21,6 +21,7 @@ target_sources(bagl
     FILES
       "${BAGL_INCLUDE_DIR}/bagl/bagl.h"
       "${BAGL_INCLUDE_DIR}/bagl/window.h"
+      "${BAGL_INCLUDE_DIR}/bagl/frame.h"
 )
 target_include_directories(bagl
   PUBLIC
