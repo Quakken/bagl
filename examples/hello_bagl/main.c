@@ -16,9 +16,6 @@ int main() {
 
   /* Render loop */
   while (!baglShouldClose(state)) {
-    printf("Window dimensions: %dx%d. Viewport dimensions: %dx%d\n",
-           baglGetWindowWidth(state), baglGetWindowHeight(state),
-           baglGetViewportWidth(state), baglGetViewportHeight(state));
     baglPollEvents();
   }
 

@@ -7,6 +7,8 @@
 #ifndef BAGL_WINDOW_H
 #define BAGL_WINDOW_H
 
+#include <stdbool.h>
+
 /* Forward */
 
 typedef struct BaglState BaglState;
@@ -70,7 +72,7 @@ int baglGetViewportHeight(const BaglState* state);
  * @param state State of the window to test.
  * @return True if the window should be closed.
  */
-int baglShouldClose(const BaglState* state);
+bool baglShouldClose(const BaglState* state);
 
 /**
  * @brief Sets the window mode of a state's window.

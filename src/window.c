@@ -41,7 +41,7 @@ int baglGetViewportHeight(const BaglState* state) {
   return height;
 }
 
-int baglShouldClose(const BaglState* state) {
+bool baglShouldClose(const BaglState* state) {
   if (!state) {
     return 1;
   }

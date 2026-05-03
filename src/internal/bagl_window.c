@@ -102,7 +102,9 @@ static GLFWwindow* baglCreateGLFWWindow(const BaglWindowConfig* config) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
   /* Create the window  */
   GLFWwindow* window = glfwCreateWindow(config->width, config->height,
@@ -112,7 +114,10 @@ static GLFWwindow* baglCreateGLFWWindow(const BaglWindowConfig* config) {
   }
   /* Bind the OpenGL context */
   glfwMakeContextCurrent(window);
-  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    glfwDestroyWindow(window);
+    return NULL;
+  }
 
   /* Bind callbacks */
   glfwSetFramebufferSizeCallback(window, baglFramebufferResizeCallback);
