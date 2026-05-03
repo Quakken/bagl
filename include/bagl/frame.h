@@ -14,18 +14,40 @@
 
 typedef struct BaglState BaglState;
 
+/**
+ * @brief Describes a type of frame attachment.
+ */
 typedef enum BaglAttachment {
   BAGL_ATTACHMENT_COLOR,
   BAGL_ATTACHMENT_DEPTH_STENCIL,
 } BaglAttachment;
 
+/**
+ * @brief Configuration options for creating a frame.
+ */
 typedef struct BaglFrameConfig {
+  /* Number of color attachments to bind */
   int numColorAttachments;
   /* TODO: Allow user to pass their own images as color attachments */
+  /*
+   * Array of color attachments to bind to the frame. If NULL, and
+   * numColorAttachments is greater than 0, the frame will generate its own
+   * color attachments.
+   */
+  void** colorAttachments;
   /* TODO: Allow user to pass their own depth/stencil buffers */
+  /*
+   * Pointer to the frame's depth/stencil attachment. If NULL, and depth or
+   * stencil testing is enabled, a new attachment will be generated.
+   */
+  void* depthStencilAttachment;
+  /* Whether to enable depth testing when writing to the frame */
   bool enableDepthTest;
+  /* Whether to enable stencil testing when writing to the frame */
   bool enableStencilTest;
-  /* TODO: Frame usage? (readonly, writeonly, read/write) */
+
+  /* TODO: Frame usage? (readonly, writeonly, read/write) - could be used for
+   * optimization (render buffers instead of textures for color attachment) */
 } BaglFrameConfig;
 
 /**

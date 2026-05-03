@@ -3,6 +3,7 @@
 
 #include "bagl/bagl.h"
 #include "bagl/window.h"
+#include "bagl/frame.h"
 
 int main() {
   baglInit();
@@ -14,12 +15,17 @@ int main() {
     exit(1);
   }
 
+  BaglFrame* frame = baglCreateFrame(state, NULL);
+
   /* Render loop */
   while (!baglShouldClose(state)) {
+    baglClearFrame(frame, BAGL_ATTACHMENT_COLOR, 0.4, 0.4, 0.4, 1.0);
+    baglPresent(state, frame, NULL);
     baglPollEvents();
   }
 
   /* Cleanup */
+  baglDestroyFrame(state, &frame);
   baglDestroyState(&state);
   baglTerminate();
 }

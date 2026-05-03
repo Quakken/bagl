@@ -9,6 +9,7 @@ target_sources(bagl
   PRIVATE
     "${BAGL_SOURCE_DIR}/bagl.c"
     "${BAGL_SOURCE_DIR}/window.c"
+    "${BAGL_SOURCE_DIR}/frame.c"
     "${BAGL_SOURCE_DIR}/internal/bagl_window.h"
     "${BAGL_SOURCE_DIR}/internal/bagl_window.c"
     "${BAGL_SOURCE_DIR}/internal/bagl_state.h"
