@@ -3,6 +3,7 @@
 #include <stdio.h>  /* fprintf */
 #include <stdlib.h> /* realloc, NULL */
 
+#include "bagl/shader.h"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -27,6 +28,19 @@ const static BaglConfig BAGL_CONFIG_DEFAULT = {
     .logFn = &baglLogFnDefault,
     .windowConfig = NULL,
 };
+
+/* Source code for the fullscreen vertex shader */
+const static char* fullscreenVSSource =
+    "#version 410 core                    \n"
+    "layout(location = 0) out vec2 uv;    \n"
+    "void main() {                        \n"
+    "  vec2 pos = vec2(                   \n"
+    "    (gl_VertexID == 1) ? 3.0 : -1.0, \n"
+    "    (gl_VertexID == 2) ? 3.0 : -1.0  \n"
+    "  );                                 \n"
+    "  uv = pos * 0.5 + 0.5;              \n"
+    "  gl_Position = vec4(pos, 0.0, 1.0); \n"
+    "}                                      ";
 
 /* Definitions */
 
@@ -79,6 +93,11 @@ void baglDestroyState(BaglState** state) {
   /* Destroy window */
   baglDestroyWindow(s, &s->window);
 
+  /* Destroy empty VAO */
+  glDeleteVertexArrays(1, &s->emptyVAO);
+  /* Destroy fullscreen vertex stage */
+  baglDestroyShaderStage(s, &s->fullscreenVS);
+
   /* Free state memory */
   baglLog(s, INFO, "Destroying state");
   s->reallocFn(s, 0);
@@ -96,7 +115,15 @@ static void baglInitState(const BaglConfig* config, BaglState* state) {
   state->logFn = config->logFn;
   state->reallocFn =
       (config->reallocFn) ? config->reallocFn : BAGL_CONFIG_DEFAULT.reallocFn;
+
+  /* Create window */
   state->window = baglCreateWindow(state, config->windowConfig);
+
+  /* Create empty VAO */
+  glGenVertexArrays(1, &state->emptyVAO);
+  /* Compile fullscreen vertex stage */
+  state->fullscreenVS =
+      baglCompileShaderStage(state, BAGL_STAGE_VERTEX, fullscreenVSSource);
 }
 
 static void baglLogFnDefault(BaglLogLevel level, const char* message) {

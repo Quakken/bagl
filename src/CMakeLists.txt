@@ -11,7 +11,9 @@ target_sources(bagl
     "${BAGL_SOURCE_DIR}/window.c"
     "${BAGL_SOURCE_DIR}/frame.c"
     "${BAGL_SOURCE_DIR}/image.c"
+    "${BAGL_SOURCE_DIR}/shader.c"
     "${BAGL_SOURCE_DIR}/internal/bagl_window.c"
+    "${BAGL_SOURCE_DIR}/internal/bagl_shader.h"
     "${BAGL_SOURCE_DIR}/internal/bagl_image.h"
     "${BAGL_SOURCE_DIR}/internal/bagl_window.h"
     "${BAGL_SOURCE_DIR}/internal/bagl_state.h"
@@ -26,6 +28,7 @@ target_sources(bagl
       "${BAGL_INCLUDE_DIR}/bagl/window.h"
       "${BAGL_INCLUDE_DIR}/bagl/frame.h"
       "${BAGL_INCLUDE_DIR}/bagl/image.h"
+      "${BAGL_INCLUDE_DIR}/bagl/shader.h"
 )
 target_include_directories(bagl
   PUBLIC

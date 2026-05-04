@@ -7,6 +7,7 @@
 #include "GLFW/glfw3.h"
 
 #include "bagl/image.h"           /* BaglImage, baglCreateImage */
+#include "internal/bagl_shader.h" /* BaglShader */
 #include "internal/bagl_image.h"  /* BaglImage */
 #include "internal/bagl_state.h"  /* BaglState */
 #include "internal/bagl_window.h" /* BaglWindow */
@@ -166,7 +167,7 @@ void baglClearFrame(BaglFrame* frame,
   }
 }
 
-void baglPresent(BaglState* state, const BaglFrame* frame, void* shader) {
+void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
   if (!state || !frame) {
     return;
   }
@@ -192,8 +193,17 @@ void baglPresent(BaglState* state, const BaglFrame* frame, void* shader) {
                       baglGetViewportHeight(state), GL_COLOR_BUFFER_BIT,
                       GL_LINEAR);
   } else {
-    /* TODO: Render image with shader (should be post-processing, vertex is full
-     * screen quad) */
+    /* Bind resources */
+    glBindVertexArray(state->emptyVAO);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(shader->program);
+    /* Bind all color attachments as textures */
+    for (size_t i = 0; i < frame->numColorAttachments; ++i) {
+      glActiveTexture(GL_TEXTURE0 + i);
+      glBindTexture(GL_TEXTURE_2D, frame->colorAttachments[i]->texture);
+    }
+    /* Draw to the framebuffer */
+    glDrawArrays(GL_TRIANGLES, 0, 3);
   }
   glfwSwapBuffers(state->window->window);
 }

@@ -14,6 +14,7 @@
 
 typedef struct BaglState BaglState;
 typedef struct BaglImage BaglImage;
+typedef struct BaglShader BaglShader;
 
 /**
  * @brief Describes a type of frame attachment.
@@ -111,9 +112,10 @@ void baglSetStencilTestEnabled(BaglFrame* frame, bool enabled);
  * @brief Presents a frame to the screen.
  * @param state Bagl state to present to.
  * @param frame Frame to present.
- * TODO: @param shader Shader to apply when presenting.
+ * @param shader Shader to apply when presenting. This should be a fullscreen
+ * shader (created without specifying a vertex stage).
  */
-void baglPresent(BaglState* state, const BaglFrame* frame, void* shader);
+void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader);
 
 /**
  * @brief Destroys a frame.

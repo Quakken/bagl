@@ -3,6 +3,7 @@
 
 #include "bagl/bagl.h"
 #include "bagl/image.h"
+#include "bagl/shader.h"
 #include "bagl/window.h"
 #include "bagl/frame.h"
 
@@ -34,13 +35,20 @@ int main() {
   };
   BaglFrame* frame = baglCreateFrame(state, &cfg);
 
+  BaglShaderConfig shaderConfig = {
+      /* Fullscreen VS is default */
+      .fragmentFilename = "../assets/invert.frag",
+  };
+  BaglShader* invertEffect = baglCreateShader(state, &shaderConfig);
+
   /* Render loop */
   while (!baglShouldClose(state)) {
-    baglPresent(state, frame, NULL);
+    baglPresent(state, frame, invertEffect);
     baglPollEvents();
   }
 
   /* Cleanup */
+  baglDestroyShader(state, &invertEffect);
   baglDestroyImage(state, &image);
   baglDestroyFrame(state, &frame);
   baglDestroyState(&state);
@@ -62,23 +70,22 @@ void* trackedRealloc(void* data, size_t size) {
 }
 
 void printMessage(BaglLogLevel level, const char* message) {
-  printf("[bagl] ");
   switch (level) {
     case BAGL_LOG_INFO:
-      printf("INFO: ");
+      printf("\033[2m[bagl] INFO: ");
       break;
     case BAGL_LOG_STANDARD:
-      printf("STANDARD: ");
+      printf("\033[2m[bagl] STANDARD: ");
       break;
     case BAGL_LOG_WARNING:
-      printf("WARNING: ");
+      printf("\033[33m[bagl] WARNING: ");
       break;
     case BAGL_LOG_ERROR:
-      printf("ERROR: ");
+      printf("\033[31m[bagl] ERROR: ");
       break;
     case BAGL_LOG_FATAL:
-      printf("FATAL: ");
+      printf("\033[41;37m[bagl] FATAL: ");
       break;
   }
-  printf("%s\n", message);
+  printf("%s\033[0m\n", message);
 }
