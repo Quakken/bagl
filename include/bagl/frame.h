@@ -13,6 +13,7 @@
 /* Forward */
 
 typedef struct BaglState BaglState;
+typedef struct BaglImage BaglImage;
 
 /**
  * @brief Describes a type of frame attachment.
@@ -27,20 +28,18 @@ typedef enum BaglAttachment {
  */
 typedef struct BaglFrameConfig {
   /* Number of color attachments to bind */
-  int numColorAttachments;
-  /* TODO: Allow user to pass their own images as color attachments */
+  size_t numColorAttachments;
   /*
    * Array of color attachments to bind to the frame. If NULL, and
    * numColorAttachments is greater than 0, the frame will generate its own
    * color attachments.
    */
-  void** colorAttachments;
-  /* TODO: Allow user to pass their own depth/stencil buffers */
+  BaglImage** colorAttachments;
   /*
    * Pointer to the frame's depth/stencil attachment. If NULL, and depth or
    * stencil testing is enabled, a new attachment will be generated.
    */
-  void* depthStencilAttachment;
+  BaglImage* depthStencilAttachment;
   /* Whether to enable depth testing when writing to the frame */
   bool enableDepthTest;
   /* Whether to enable stencil testing when writing to the frame */
@@ -67,9 +66,9 @@ BaglFrame* baglCreateFrame(BaglState* state, const BaglFrameConfig* config);
  * @brief Clears an attachment bound to a frame.
  * @param frame Frame to modify.
  * @param attachment Attachment to clear.
- * @param r Red chanel value.
- * @param g Green chanel value.
- * @param b Blue chanel value.
+ * @param r Red channel value.
+ * @param g Green channel value.
+ * @param b Blue channel value.
  * @param a Alpha value.
  */
 void baglClearFrame(BaglFrame* frame,

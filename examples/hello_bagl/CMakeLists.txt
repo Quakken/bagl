@@ -8,3 +8,5 @@ target_link_libraries(hello_bagl
   PRIVATE
     bagl::bagl
 )
+
+add_dependencies(hello_bagl example_assets)

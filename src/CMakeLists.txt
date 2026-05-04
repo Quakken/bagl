@@ -10,8 +10,10 @@ target_sources(bagl
     "${BAGL_SOURCE_DIR}/bagl.c"
     "${BAGL_SOURCE_DIR}/window.c"
     "${BAGL_SOURCE_DIR}/frame.c"
-    "${BAGL_SOURCE_DIR}/internal/bagl_window.h"
+    "${BAGL_SOURCE_DIR}/image.c"
     "${BAGL_SOURCE_DIR}/internal/bagl_window.c"
+    "${BAGL_SOURCE_DIR}/internal/bagl_image.h"
+    "${BAGL_SOURCE_DIR}/internal/bagl_window.h"
     "${BAGL_SOURCE_DIR}/internal/bagl_state.h"
     "${BAGL_SOURCE_DIR}/internal/utils.h"
   PUBLIC
@@ -23,6 +25,7 @@ target_sources(bagl
       "${BAGL_INCLUDE_DIR}/bagl/bagl.h"
       "${BAGL_INCLUDE_DIR}/bagl/window.h"
       "${BAGL_INCLUDE_DIR}/bagl/frame.h"
+      "${BAGL_INCLUDE_DIR}/bagl/image.h"
 )
 target_include_directories(bagl
   PUBLIC
