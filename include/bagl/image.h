@@ -23,6 +23,8 @@ typedef enum BaglImageFormat {
   BAGL_FORMAT_RGB,
   /* 24 bit depth channel, 8 bit stencil channel */
   BAGL_FORMAT_DEPTH_STENCIL,
+  /* Unknown format */
+  BAGL_FORMAT_UNKNOWN,
 } BaglImageFormat;
 
 /**
@@ -74,6 +76,27 @@ BaglImage* baglCreateImage(BaglState* state, const BaglImageConfig* config);
  * cannot be used as depth/stencil attachments.
  */
 BaglImage* baglLoadImage(BaglState* state, const char* filename);
+
+/**
+ * @brief Returns the width of an image.
+ * @param image Image to test.
+ * @return Width of the image.
+ */
+int baglGetImageWidth(BaglImage* image);
+
+/**
+ * @brief Returns the height of an image.
+ * @param image Image to test.
+ * @return Height of the image.
+ */
+int baglGetImageHeight(BaglImage* image);
+
+/**
+ * @brief Returns the format of an image.
+ * @param image Image to test.
+ * @return Format of the image.
+ */
+BaglImageFormat baglGetImageFormat(BaglImage* image);
 
 /**
  * @brief Destroys an image.

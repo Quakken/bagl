@@ -8,7 +8,7 @@
 #ifndef BAGL_FRAME_H
 #define BAGL_FRAME_H
 
-#include <stdbool.h>
+#include <stdbool.h> /* bool */
 
 /* Forward */
 
@@ -79,6 +79,35 @@ void baglClearFrame(BaglFrame* frame,
                     float a);
 
 /**
+ * @brief Returns all color attachments bound to a frame.
+ * @param frame Frame to get color attachments from.
+ * @param count Output parameter to store number of color attachments returned.
+ * @return Pointer to the array of color attachments bound to the frame.
+ */
+BaglImage** baglGetColorAttachments(const BaglFrame* frame, size_t* count);
+
+/**
+ * @brief Returns the depth/stencil attachment bound to the frame.
+ * @brief frame Frame to get depth/stencil attachment from.
+ * @return Pointer to the frame's depth/stencil attachment.
+ */
+BaglImage* baglGetDepthStencilAttachment(const BaglFrame* frame);
+
+/**
+ * @brief Enables/disables depth testing for the frame.
+ * @param frame Frame to modify.
+ * @param enabled Whether depth tests should be enabled/disabled.
+ */
+void baglSetDepthTestEnabled(BaglFrame* frame, bool enabled);
+
+/**
+ * @brief Enables/disables stencil testing for the frame.
+ * @param frame Frame to modify.
+ * @param enabled Whether stencil tests should be enabled/disabled.
+ */
+void baglSetStencilTestEnabled(BaglFrame* frame, bool enabled);
+
+/**
  * @brief Presents a frame to the screen.
  * @param state Bagl state to present to.
  * @param frame Frame to present.
@@ -92,7 +121,5 @@ void baglPresent(BaglState* state, const BaglFrame* frame, void* shader);
  * @param frame Frame to destroy.
  */
 void baglDestroyFrame(BaglState* state, BaglFrame** frame);
-
-/* TODO: Getting attachments from frame */
 
 #endif

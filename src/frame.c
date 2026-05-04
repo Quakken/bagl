@@ -20,16 +20,17 @@ const static BaglFrameConfig BAGL_DEFAULT_FRAME_CONFIG = {
 };
 
 typedef struct BaglFrame {
+  size_t numColorAttachments;
+  BaglImage** colorAttachments;
+  BaglImage* depthStencilAttachment;
+
   GLuint fbo;
 
-  size_t numColorAttachments;
   bool ownsColorAttachments;
-  BaglImage** colorAttachments;
+  bool ownsDepthStencilAttachment;
 
   bool depthEnabled;
   bool stencilEnabled;
-  bool ownsDepthStencilAttachment;
-  BaglImage* depthStencilAttachment;
 } BaglFrame;
 
 BaglFrame* baglCreateFrame(BaglState* state, const BaglFrameConfig* config) {
@@ -108,12 +109,26 @@ BaglFrame* baglCreateFrame(BaglState* state, const BaglFrameConfig* config) {
 
   /* Bind attachments to the framebuffer */
   for (size_t i = 0; i < (size_t)frame->numColorAttachments; ++i) {
+    /* Ensure color attachment formats are valid */
+    if (frame->colorAttachments[i]->format != BAGL_FORMAT_RGBA &&
+        frame->colorAttachments[i]->format != BAGL_FORMAT_RGB) {
+      baglLog(state, WARNING,
+              "Color attachment has invalid format (in baglCreateFrame)");
+    }
+    /* Attach to framebuffer */
     glBindTexture(GL_TEXTURE_2D, frame->colorAttachments[i]->texture);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
                            GL_TEXTURE_2D, frame->colorAttachments[i]->texture,
                            0);
   }
   if (frame->depthStencilAttachment) {
+    /* Ensure depth/stencil attachment format is valid */
+    if (frame->depthStencilAttachment->format != BAGL_FORMAT_DEPTH_STENCIL) {
+      baglLog(
+          state, WARNING,
+          "Depth/stencil attachment has invalid format (in baglCreateFrame)");
+    }
+
     glBindTexture(GL_TEXTURE_2D, frame->depthStencilAttachment->texture);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
                            GL_TEXTURE_2D,
@@ -181,6 +196,39 @@ void baglPresent(BaglState* state, const BaglFrame* frame, void* shader) {
      * screen quad) */
   }
   glfwSwapBuffers(state->window->window);
+}
+
+BaglImage** baglGetColorAttachments(const BaglFrame* frame, size_t* count) {
+  if (!count) {
+    return NULL;
+  }
+  if (!frame) {
+    *count = 0;
+    return NULL;
+  }
+  *count = frame->numColorAttachments;
+  return frame->colorAttachments;
+}
+
+BaglImage* baglGetDepthStencilAttachment(const BaglFrame* frame) {
+  if (!frame) {
+    return NULL;
+  }
+  return frame->depthStencilAttachment;
+}
+
+void baglSetDepthTestEnabled(BaglFrame* frame, bool enabled) {
+  if (!frame) {
+    return;
+  }
+  frame->depthEnabled = enabled;
+}
+
+void baglSetStencilTestEnabled(BaglFrame* frame, bool enabled) {
+  if (!frame) {
+    return;
+  }
+  frame->stencilEnabled = enabled;
 }
 
 void baglDestroyFrame(BaglState* state, BaglFrame** frame) {

@@ -85,6 +85,27 @@ BaglImage* baglLoadImage(BaglState* state, const char* filename) {
   return image;
 }
 
+int baglGetImageWidth(BaglImage* image) {
+  if (!image) {
+    return 0;
+  }
+  return image->width;
+}
+
+int baglGetImageHeight(BaglImage* image) {
+  if (!image) {
+    return 0;
+  }
+  return image->height;
+}
+
+BaglImageFormat baglGetImageFormat(BaglImage* image) {
+  if (!image) {
+    return BAGL_FORMAT_UNKNOWN;
+  }
+  return image->format;
+}
+
 void baglDestroyImage(BaglState* state, BaglImage** image) {
   if (!state || !image || !(*image)) {
     return;
@@ -109,6 +130,8 @@ static GLenum baglGetTextureFormat(BaglImageFormat fmt) {
       return GL_RGB;
     case BAGL_FORMAT_DEPTH_STENCIL:
       return GL_DEPTH_STENCIL;
+    default:
+      return GL_INVALID_VALUE;
   }
 }
 
