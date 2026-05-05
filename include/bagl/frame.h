@@ -65,6 +65,7 @@ BaglFrame* baglCreateFrame(BaglState* state, const BaglFrameConfig* config);
 
 /**
  * @brief Clears an attachment bound to a frame.
+ * @param state State to use.
  * @param frame Frame to modify.
  * @param attachment Attachment to clear.
  * @param r Red channel value.
@@ -72,7 +73,8 @@ BaglFrame* baglCreateFrame(BaglState* state, const BaglFrameConfig* config);
  * @param b Blue channel value.
  * @param a Alpha value.
  */
-void baglClearFrame(BaglFrame* frame,
+void baglClearFrame(BaglState* state,
+                    BaglFrame* frame,
                     BaglAttachment attachment,
                     float r,
                     float g,
@@ -81,32 +83,54 @@ void baglClearFrame(BaglFrame* frame,
 
 /**
  * @brief Returns all color attachments bound to a frame.
+ * @param state State to use
  * @param frame Frame to get color attachments from.
  * @param count Output parameter to store number of color attachments returned.
  * @return Pointer to the array of color attachments bound to the frame.
  */
-BaglImage** baglGetColorAttachments(const BaglFrame* frame, size_t* count);
+BaglImage** baglGetColorAttachments(BaglState* sate,
+                                    const BaglFrame* frame,
+                                    size_t* count);
 
 /**
  * @brief Returns the depth/stencil attachment bound to the frame.
+ * @param state State to use.
  * @brief frame Frame to get depth/stencil attachment from.
  * @return Pointer to the frame's depth/stencil attachment.
  */
-BaglImage* baglGetDepthStencilAttachment(const BaglFrame* frame);
+BaglImage* baglGetDepthStencilAttachment(BaglState* state,
+                                         const BaglFrame* frame);
 
 /**
  * @brief Enables/disables depth testing for the frame.
+ * @param state State to use.
  * @param frame Frame to modify.
  * @param enabled Whether depth tests should be enabled/disabled.
  */
-void baglSetDepthTestEnabled(BaglFrame* frame, bool enabled);
+void baglSetDepthTestEnabled(BaglState* state, BaglFrame* frame, bool enabled);
 
 /**
  * @brief Enables/disables stencil testing for the frame.
+ * @param state State to use.
  * @param frame Frame to modify.
  * @param enabled Whether stencil tests should be enabled/disabled.
  */
-void baglSetStencilTestEnabled(BaglFrame* frame, bool enabled);
+void baglSetStencilTestEnabled(BaglState* state,
+                               BaglFrame* frame,
+                               bool enabled);
+
+/**
+ * @brief Applies a post-processing effect to a frame.
+ * @param state State to use.
+ * @param dest Frame to write to.
+ * @param src Frame to read from.
+ * @param shader Shader to apply. This should be a fullscreen shader (created
+ * without specifying a vertex stage).
+ */
+void baglProcessFrame(BaglState* state,
+                      BaglFrame* dest,
+                      const BaglFrame* src,
+                      BaglShader* shader);
 
 /**
  * @brief Presents a frame to the screen.

@@ -27,30 +27,45 @@ int main() {
     exit(1);
   }
 
-  /* Fill frame with a pre-loaded image */
-  BaglImage* image = baglLoadImage(state, "../assets/bagel.jpg");
-  BaglFrameConfig cfg = {
-      .numColorAttachments = 1,
-      .colorAttachments = &image,
+  /* Fill frame with a collection of pre-loaded images */
+  BaglImage* images[] = {
+      baglLoadImage(state, "../assets/bagel.jpg"),
+      baglLoadImage(state, "../assets/pug.png"),
+      baglLoadImage(state, "../assets/purrito.png"),
   };
-  BaglFrame* frame = baglCreateFrame(state, &cfg);
+  BaglFrameConfig cfg = {
+      .numColorAttachments = 3,
+      .colorAttachments = &images[0],
+  };
+  BaglFrame* imageFrame = baglCreateFrame(state, &cfg);
+  BaglFrame* processedFrame = baglCreateFrame(state, NULL);
 
+  /* Load shaders */
   BaglShaderConfig shaderConfig = {
       /* Fullscreen VS is default */
       .fragmentFilename = "../assets/invert.frag",
   };
   BaglShader* invertEffect = baglCreateShader(state, &shaderConfig);
+  shaderConfig.fragmentFilename = "../assets/merge.frag";
+  BaglShader* mergeEffect = baglCreateShader(state, &shaderConfig);
 
   /* Render loop */
   while (!baglShouldClose(state)) {
-    baglPresent(state, frame, invertEffect);
+    /* Combine post-processing effects (merge, then invert) */
+    baglClearFrame(state, processedFrame, BAGL_ATTACHMENT_COLOR, 0, 0, 0, 1);
+    baglProcessFrame(state, processedFrame, imageFrame, mergeEffect);
+    baglPresent(state, processedFrame, invertEffect);
     baglPollEvents();
   }
 
   /* Cleanup */
+  baglDestroyShader(state, &mergeEffect);
   baglDestroyShader(state, &invertEffect);
-  baglDestroyImage(state, &image);
-  baglDestroyFrame(state, &frame);
+  for (size_t i = 0; i < 3; ++i) {
+    baglDestroyImage(state, &images[i]);
+  }
+  baglDestroyFrame(state, &imageFrame);
+  baglDestroyFrame(state, &processedFrame);
   baglDestroyState(&state);
   baglTerminate();
 

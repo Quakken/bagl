@@ -148,13 +148,14 @@ BaglFrame* baglCreateFrame(BaglState* state, const BaglFrameConfig* config) {
   return frame;
 }
 
-void baglClearFrame(BaglFrame* frame,
+void baglClearFrame(BaglState* state,
+                    BaglFrame* frame,
                     BaglAttachment attachment,
                     float r,
                     float g,
                     float b,
                     float a) {
-  if (!frame) {
+  if (!state || !frame) {
     return;
   }
   glBindFramebuffer(GL_FRAMEBUFFER, frame->fbo);
@@ -165,6 +166,32 @@ void baglClearFrame(BaglFrame* frame,
     case BAGL_ATTACHMENT_DEPTH_STENCIL:
       glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   }
+}
+
+void baglProcessFrame(BaglState* state,
+                      BaglFrame* dest,
+                      const BaglFrame* src,
+                      BaglShader* shader) {
+  if (!state || !dest || !src || !shader) {
+    return;
+  }
+  if (dest == src) {
+    baglLog(state, ERROR,
+            "Destination and source frames cannot be the same (in "
+            "baglProcessFrame)");
+    return;
+  }
+  /* Bind required sources */
+  glBindVertexArray(state->emptyVAO);
+  glBindFramebuffer(GL_FRAMEBUFFER, dest->fbo);
+  glUseProgram(shader->program);
+  /* Bind all color attachments as textures */
+  for (size_t i = 0; i < src->numColorAttachments; ++i) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, src->colorAttachments[i]->texture);
+  }
+  /* Draw to the framebuffer */
+  glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
@@ -208,8 +235,10 @@ void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
   glfwSwapBuffers(state->window->window);
 }
 
-BaglImage** baglGetColorAttachments(const BaglFrame* frame, size_t* count) {
-  if (!count) {
+BaglImage** baglGetColorAttachments(BaglState* state,
+                                    const BaglFrame* frame,
+                                    size_t* count) {
+  if (!state || !count) {
     return NULL;
   }
   if (!frame) {
@@ -220,22 +249,25 @@ BaglImage** baglGetColorAttachments(const BaglFrame* frame, size_t* count) {
   return frame->colorAttachments;
 }
 
-BaglImage* baglGetDepthStencilAttachment(const BaglFrame* frame) {
+BaglImage* baglGetDepthStencilAttachment(BaglState* state,
+                                         const BaglFrame* frame) {
   if (!frame) {
     return NULL;
   }
   return frame->depthStencilAttachment;
 }
 
-void baglSetDepthTestEnabled(BaglFrame* frame, bool enabled) {
+void baglSetDepthTestEnabled(BaglState* state, BaglFrame* frame, bool enabled) {
   if (!frame) {
     return;
   }
   frame->depthEnabled = enabled;
 }
 
-void baglSetStencilTestEnabled(BaglFrame* frame, bool enabled) {
-  if (!frame) {
+void baglSetStencilTestEnabled(BaglState* state,
+                               BaglFrame* frame,
+                               bool enabled) {
+  if (!state || !frame) {
     return;
   }
   frame->stencilEnabled = enabled;
