@@ -3,6 +3,7 @@
 
 #include "bagl/bagl.h"
 #include "bagl/image.h"
+#include "bagl/material.h"
 #include "bagl/shader.h"
 #include "bagl/window.h"
 #include "bagl/frame.h"
@@ -99,6 +100,8 @@ int main() {
   };
   BaglMesh* mesh = baglCreateMesh(state, &meshConfig);
 
+  BaglMaterial* material = baglCreateMaterial(state, NULL);
+
   /* Render loop */
   while (!baglShouldClose(state)) {
     /* Combine post-processing effects (merge, then invert) */
@@ -109,6 +112,7 @@ int main() {
   }
 
   /* Cleanup */
+  baglDestroyMaterial(state, &material);
   baglDestroyMesh(state, &mesh);
   baglDestroyShader(state, &mergeEffect);
   baglDestroyShader(state, &invertEffect);

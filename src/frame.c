@@ -7,7 +7,7 @@
 #include "GLFW/glfw3.h"
 
 #include "bagl/image.h"           /* BaglImage, baglCreateImage */
-#include "internal/bagl_shader.h" /* BaglShader */
+#include "internal/bagl_shader.h" /* BaglShader, texture units */
 #include "internal/bagl_image.h"  /* BaglImage */
 #include "internal/bagl_state.h"  /* BaglState */
 #include "internal/bagl_window.h" /* BaglWindow */
@@ -187,7 +187,7 @@ void baglProcessFrame(BaglState* state,
   glUseProgram(shader->program);
   /* Bind all color attachments as textures */
   for (size_t i = 0; i < src->numColorAttachments; ++i) {
-    glActiveTexture(GL_TEXTURE0 + i);
+    glActiveTexture(GL_TEXTURE0 + BAGL_COLOR_TEXTURE_UNIT + i);
     glBindTexture(GL_TEXTURE_2D, src->colorAttachments[i]->texture);
   }
   /* Draw to the framebuffer */
@@ -227,7 +227,7 @@ void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
     glUseProgram(shader->program);
     /* Bind all color attachments as textures */
     for (size_t i = 0; i < frame->numColorAttachments; ++i) {
-      glActiveTexture(GL_TEXTURE0 + i);
+      glActiveTexture(GL_TEXTURE0 + BAGL_COLOR_TEXTURE_UNIT + i);
       glBindTexture(GL_TEXTURE_2D, frame->colorAttachments[i]->texture);
     }
     /* Draw to the framebuffer */
