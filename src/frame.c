@@ -192,6 +192,7 @@ void baglProcessFrame(BaglState* state,
   }
   /* Draw to the framebuffer */
   glDrawArrays(GL_TRIANGLES, 0, 3);
+  glBindVertexArray(0);
 }
 
 void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
@@ -231,6 +232,7 @@ void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
     }
     /* Draw to the framebuffer */
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0);
   }
   glfwSwapBuffers(state->window->window);
 }
