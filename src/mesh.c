@@ -27,6 +27,11 @@ BaglMesh* baglCreateMesh(BaglState* state, const BaglMeshConfig* config) {
     baglLog(state, ERROR, "Couldn't allocate mesh (in baglCreateMesh)");
     return NULL;
   }
+  mesh->numIndices = config->numIndices;
+
+  /* Make the VAO */
+  glGenVertexArrays(1, &mesh->vao);
+  glBindVertexArray(mesh->vao);
 
   /* Make the VBO and write contents */
   glGenBuffers(1, &mesh->vbo);
@@ -40,9 +45,7 @@ BaglMesh* baglCreateMesh(BaglState* state, const BaglMeshConfig* config) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, config->numIndices * sizeof(uint32_t),
                config->indices, GL_STATIC_DRAW);
 
-  /* Make the VAO and write attributes */
-  glGenVertexArrays(1, &mesh->vao);
-  glBindVertexArray(mesh->vao);
+  /* Write VAO attributes */
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(BaglVertex),
                         (void*)offsetof(BaglVertex, position));
   glEnableVertexAttribArray(0);
@@ -52,8 +55,8 @@ BaglMesh* baglCreateMesh(BaglState* state, const BaglMeshConfig* config) {
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(BaglVertex),
                         (void*)offsetof(BaglVertex, texCoords));
   glEnableVertexAttribArray(2);
-  glBindVertexArray(0);
 
+  glBindVertexArray(0);
   baglLog(state, INFO, "Mesh created");
   return mesh;
 }

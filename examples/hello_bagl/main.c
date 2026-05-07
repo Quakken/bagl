@@ -4,6 +4,7 @@
 #include "bagl/bagl.h"
 #include "bagl/image.h"
 #include "bagl/material.h"
+#include "bagl/model.h"
 #include "bagl/shader.h"
 #include "bagl/window.h"
 #include "bagl/frame.h"
@@ -29,27 +30,14 @@ int main() {
     exit(1);
   }
 
-  /* Fill frame with a collection of pre-loaded images */
-  BaglImage* images[] = {
-      baglLoadImage(state, "../assets/bagel.jpg"),
-      baglLoadImage(state, "../assets/pug.png"),
-      baglLoadImage(state, "../assets/purrito.png"),
-  };
-  BaglFrameConfig cfg = {
-      .numColorAttachments = 3,
-      .colorAttachments = &images[0],
-  };
-  BaglFrame* imageFrame = baglCreateFrame(state, &cfg);
-  BaglFrame* processedFrame = baglCreateFrame(state, NULL);
+  BaglFrame* frame = baglCreateFrame(state, NULL);
 
   /* Load shaders */
   BaglShaderConfig shaderConfig = {
-      /* Fullscreen VS is default */
-      .fragmentFilename = "../assets/invert.frag",
+      .vertexFilename = "../assets/default.vert",
+      .fragmentFilename = "../assets/default.frag",
   };
-  BaglShader* invertEffect = baglCreateShader(state, &shaderConfig);
-  shaderConfig.fragmentFilename = "../assets/merge.frag";
-  BaglShader* mergeEffect = baglCreateShader(state, &shaderConfig);
+  BaglShader* shader = baglCreateShader(state, &shaderConfig);
 
   /* Create a mesh */
   BaglVertex vertices[] = {
@@ -100,27 +88,32 @@ int main() {
   };
   BaglMesh* mesh = baglCreateMesh(state, &meshConfig);
 
-  BaglMaterial* material = baglCreateMaterial(state, NULL);
+  BaglImage* image = baglLoadImage(state, "../assets/pug.png");
+  BaglMaterialConfig materialConfig = {
+      .diffuseMap = image,
+  };
+  BaglMaterial* material = baglCreateMaterial(state, &materialConfig);
+  BaglModel* model = baglCreateModel(state, mesh, material);
 
   /* Render loop */
   while (!baglShouldClose(state)) {
-    /* Combine post-processing effects (merge, then invert) */
-    baglClearFrame(state, processedFrame, BAGL_ATTACHMENT_COLOR, 0, 0, 0, 1);
-    baglProcessFrame(state, processedFrame, imageFrame, mergeEffect);
-    baglPresent(state, processedFrame, invertEffect);
+    /* Clear the frame */
+    baglClearFrame(state, frame, BAGL_ATTACHMENT_COLOR, 0, 0, 0, 1);
+    baglClearFrame(state, frame, BAGL_ATTACHMENT_DEPTH_STENCIL, 0, 0, 0, 0);
+
+    /* Draw the model */
+    baglDraw(state, frame, model, shader);
+    baglPresent(state, frame, NULL);
     baglPollEvents();
   }
 
   /* Cleanup */
+  baglDestroyImage(state, &image);
+  baglDestroyModel(state, &model);
   baglDestroyMaterial(state, &material);
   baglDestroyMesh(state, &mesh);
-  baglDestroyShader(state, &mergeEffect);
-  baglDestroyShader(state, &invertEffect);
-  for (size_t i = 0; i < 3; ++i) {
-    baglDestroyImage(state, &images[i]);
-  }
-  baglDestroyFrame(state, &imageFrame);
-  baglDestroyFrame(state, &processedFrame);
+  baglDestroyShader(state, &shader);
+  baglDestroyFrame(state, &frame);
   baglDestroyState(&state);
   baglTerminate();
 

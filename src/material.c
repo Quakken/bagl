@@ -33,6 +33,9 @@ BaglMaterial* baglCreateMaterial(BaglState* state,
             "Could not allocate material (in baglCreateMaterial)");
     return NULL;
   }
+  material->diffuseMap = config->diffuseMap;
+  material->specularMap = config->specularMap;
+  material->normalMap = config->normalMap;
 
   /* Describe UBO contents */
   BaglMaterialLayout layout = {
@@ -40,9 +43,6 @@ BaglMaterial* baglCreateMaterial(BaglState* state,
       .specular = {config->specular.r, config->specular.g, config->specular.b},
       .specularExponent = config->specularExponent,
       .transparency = config->transparency,
-      .diffuseUnit = BAGL_DIFFUSE_TEXTURE_UNIT,
-      .specularUnit = BAGL_SPECULAR_TEXTURE_UNIT,
-      .normalUnit = BAGL_NORMAL_TEXTURE_UNIT,
   };
 
   /* Generate the UBO */
@@ -50,7 +50,6 @@ BaglMaterial* baglCreateMaterial(BaglState* state,
   glBindBuffer(GL_UNIFORM_BUFFER, material->ubo);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(BaglMaterialLayout), &layout,
                GL_STATIC_DRAW);
-  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING, material->ubo);
 
   baglLog(state, INFO, "Material created");
   return material;

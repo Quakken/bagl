@@ -13,6 +13,7 @@ typedef struct BaglMesh {
   GLuint vbo;
   GLuint ebo;
   GLuint vao;
+  unsigned int numIndices;
 } BaglMesh;
 
 #endif

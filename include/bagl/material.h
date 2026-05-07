@@ -30,14 +30,11 @@ typedef struct BaglMaterialConfig {
 /**
  * Material layout in GLSL:
  *
- * layout (std140, binding = 0) uniform Material {
- *   vec3 ambient;           // 12 bytes - 0 offset
- *   vec3 specular;          // 12 bytes - 16 offset
- *   float specularExponent; // 4 bytes  - 32 offset
- *   float transparency;     // 4 bytes  - 36 offset
- *   sampler2D diffuseMap;   // 4 bytes  - 40 offset
- *   sampler2D specularMap;  // 4 bytes  - 44 offset
- *   sampler2D normalMap;    // 4 bytes  - 48 offset
+ * layout (std140, binding = 1) uniform Material {
+ *   float specularExponent;
+ *   float transparency;
+ *   vec3 ambient;
+ *   vec3 specular;
  * };
  */
 

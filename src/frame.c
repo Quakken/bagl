@@ -1,17 +1,22 @@
 #include "bagl/frame.h"
 
+#include <math.h>
 #include <stdbool.h>
 #include <string.h>
 
 #include "glad/glad.h" /* OpenGL */
 #include "GLFW/glfw3.h"
 
-#include "bagl/image.h"           /* BaglImage, baglCreateImage */
-#include "internal/bagl_shader.h" /* BaglShader, texture units */
-#include "internal/bagl_image.h"  /* BaglImage */
-#include "internal/bagl_state.h"  /* BaglState */
-#include "internal/bagl_window.h" /* BaglWindow */
-#include "internal/utils.h"       /* baglLog */
+#include "bagl/image.h" /* BaglImage, baglCreateImage */
+
+#include "internal/bagl_mesh.h"     /* BaglMesh */
+#include "internal/bagl_material.h" /* BaglMaterial */
+#include "internal/bagl_model.h"    /* BaglModel */
+#include "internal/bagl_shader.h"   /* BaglShader, texture units */
+#include "internal/bagl_image.h"    /* BaglImage */
+#include "internal/bagl_state.h"    /* BaglState */
+#include "internal/bagl_window.h"   /* BaglWindow */
+#include "internal/utils.h"         /* baglLog */
 
 /* Default configuration used to create a frame */
 const static BaglFrameConfig BAGL_DEFAULT_FRAME_CONFIG = {
@@ -192,6 +197,72 @@ void baglProcessFrame(BaglState* state,
   }
   /* Draw to the framebuffer */
   glDrawArrays(GL_TRIANGLES, 0, 3);
+  glBindVertexArray(0);
+}
+
+void baglDraw(BaglState* state,
+              BaglFrame* frame,
+              BaglModel* model,
+              BaglShader* shader) {
+  if (!state || !frame || !model || !shader) {
+    return;
+  }
+  /* Enable depth testing */
+  if (frame->depthEnabled) {
+    glEnable(GL_DEPTH_TEST);
+  } else {
+    glDisable(GL_DEPTH_TEST);
+  }
+  /* TODO: Stencil tests */
+  glUseProgram(shader->program);
+  /* Bind all material data */
+  glBindBufferRange(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING,
+                    model->material->ubo, 0, sizeof(BaglMaterialLayout));
+  if (model->material->diffuseMap) {
+    glActiveTexture(GL_TEXTURE0 + BAGL_DIFFUSE_TEXTURE_UNIT);
+    glBindTexture(GL_TEXTURE_2D, model->material->diffuseMap->texture);
+  }
+  if (model->material->specularMap) {
+    glActiveTexture(GL_TEXTURE0 + BAGL_SPECULAR_TEXTURE_UNIT);
+    glBindTexture(GL_TEXTURE_2D, model->material->specularMap->texture);
+  }
+  if (model->material->normalMap) {
+    glActiveTexture(GL_TEXTURE0 + BAGL_NORMAL_TEXTURE_UNIT);
+    glBindTexture(GL_TEXTURE_2D, model->material->normalMap->texture);
+  }
+
+  /* TODO: Bind the matrix UBO (owned by camera) */
+  /* TODO: Push model matrix (owned by model) */
+
+  /* TEMP */
+  static float theta = 0;
+  float c = cos(theta);
+  float s = sin(theta);
+  /* Rotates around all 3 axes */
+  float rotation[] = {c * c,
+                      -s * c,
+                      s,
+                      0,
+                      s * c + c * s * s,
+                      c * c - s * s * s,
+                      -s * c,
+                      0,
+                      s * s - c * s * c,
+                      c * s + s * s * c,
+                      c * c,
+                      0,
+                      0,
+                      0,
+                      0,
+                      1};
+  glUniformMatrix4fv(glGetUniformLocation(shader->program, "model"), 1, true,
+                     &rotation[0]);
+  theta += 0.01f;
+
+  /* Draw the model */
+  glBindFramebuffer(GL_FRAMEBUFFER, frame->fbo);
+  glBindVertexArray(model->mesh->vao);
+  glDrawElements(GL_TRIANGLES, model->mesh->numIndices, GL_UNSIGNED_INT, NULL);
   glBindVertexArray(0);
 }
 
