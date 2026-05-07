@@ -213,6 +213,14 @@ void baglDraw(BaglState* state,
   } else {
     glDisable(GL_DEPTH_TEST);
   }
+  /* Resize the viewport */
+  if (frame->numColorAttachments >= 1) {
+    glViewport(0, 0, frame->colorAttachments[0]->width,
+               frame->colorAttachments[0]->height);
+  } else if (frame->depthStencilAttachment) {
+    glViewport(0, 0, frame->depthStencilAttachment->width,
+               frame->depthStencilAttachment->height);
+  }
   /* TODO: Stencil tests */
   glUseProgram(shader->program);
   /* Bind all material data */
@@ -264,6 +272,9 @@ void baglDraw(BaglState* state,
   glBindVertexArray(model->mesh->vao);
   glDrawElements(GL_TRIANGLES, model->mesh->numIndices, GL_UNSIGNED_INT, NULL);
   glBindVertexArray(0);
+
+  /* Resize the viewport */
+  glViewport(0, 0, state->window->baseWidth, state->window->baseHeight);
 }
 
 void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {

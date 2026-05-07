@@ -60,6 +60,7 @@ BaglWindow* baglCreateWindow(const BaglState* state,
     state->reallocFn(window, 0);
     return NULL;
   }
+  glfwSetWindowUserPointer(window->window, window);
 
   /* Initialize other members */
   window->baseWidth = config->width;
@@ -128,5 +129,10 @@ static GLFWwindow* baglCreateGLFWWindow(const BaglWindowConfig* config) {
 static void baglFramebufferResizeCallback(GLFWwindow* window,
                                           int width,
                                           int height) {
+  BaglWindow* baglWindow = glfwGetWindowUserPointer(window);
+  if (baglWindow) {
+    baglWindow->baseWidth = width;
+    baglWindow->baseHeight = height;
+  }
   glViewport(0, 0, width, height);
 }
