@@ -16,6 +16,7 @@
 #include "internal/bagl_image.h"    /* BaglImage */
 #include "internal/bagl_state.h"    /* BaglState */
 #include "internal/bagl_window.h"   /* BaglWindow */
+#include "internal/bagl_camera.h"   /* BaglCamera */
 #include "internal/utils.h"         /* baglLog */
 
 /* Default configuration used to create a frame */
@@ -203,8 +204,9 @@ void baglProcessFrame(BaglState* state,
 void baglDraw(BaglState* state,
               BaglFrame* frame,
               BaglModel* model,
-              BaglShader* shader) {
-  if (!state || !frame || !model || !shader) {
+              BaglShader* shader,
+              BaglCamera* camera) {
+  if (!state || !frame || !model || !shader || !camera) {
     return;
   }
   /* Enable depth testing */
@@ -224,8 +226,8 @@ void baglDraw(BaglState* state,
   /* TODO: Stencil tests */
   glUseProgram(shader->program);
   /* Bind all material data */
-  glBindBufferRange(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING,
-                    model->material->ubo, 0, sizeof(BaglMaterialLayout));
+  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING,
+                   model->material->ubo);
   if (model->material->diffuseMap) {
     glActiveTexture(GL_TEXTURE0 + BAGL_DIFFUSE_TEXTURE_UNIT);
     glBindTexture(GL_TEXTURE_2D, model->material->diffuseMap->texture);
@@ -238,8 +240,13 @@ void baglDraw(BaglState* state,
     glActiveTexture(GL_TEXTURE0 + BAGL_NORMAL_TEXTURE_UNIT);
     glBindTexture(GL_TEXTURE_2D, model->material->normalMap->texture);
   }
+  /* Update and bind camera matrices */
+  if (camera->isViewDirty) {
+    baglUpdateCameraMatrices(state, camera);
+  }
+  glBindBuffer(GL_UNIFORM_BUFFER, camera->ubo);
+  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATRIX_BINDING, camera->ubo);
 
-  /* TODO: Bind the matrix UBO (owned by camera) */
   /* TODO: Push model matrix (owned by model) */
 
   /* TEMP */
@@ -247,22 +254,7 @@ void baglDraw(BaglState* state,
   float c = cos(theta);
   float s = sin(theta);
   /* Rotates around all 3 axes */
-  float rotation[] = {c * c,
-                      -s * c,
-                      s,
-                      0,
-                      s * c + c * s * s,
-                      c * c - s * s * s,
-                      -s * c,
-                      0,
-                      s * s - c * s * c,
-                      c * s + s * s * c,
-                      c * c,
-                      0,
-                      0,
-                      0,
-                      0,
-                      1};
+  float rotation[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
   glUniformMatrix4fv(glGetUniformLocation(shader->program, "model"), 1, true,
                      &rotation[0]);
   theta += 0.01f;

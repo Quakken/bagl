@@ -16,6 +16,7 @@ typedef struct BaglState BaglState;
 typedef struct BaglImage BaglImage;
 typedef struct BaglShader BaglShader;
 typedef struct BaglModel BaglModel;
+typedef struct BaglCamera BaglCamera;
 
 /**
  * @brief Describes a type of frame attachment.
@@ -139,11 +140,13 @@ void baglProcessFrame(BaglState* state,
  * @param frame Frame to draw to.
  * @param model Model to draw.
  * @param shader Shader to draw model with.
+ * @param camera Camera to draw model with.
  */
 void baglDraw(BaglState* state,
               BaglFrame* frame,
               BaglModel* model,
-              BaglShader* shader);
+              BaglShader* shader,
+              BaglCamera* camera);
 
 /**
  * @brief Presents a frame to the screen.

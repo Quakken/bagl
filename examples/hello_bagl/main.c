@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -9,6 +11,7 @@
 #include "bagl/window.h"
 #include "bagl/frame.h"
 #include "bagl/mesh.h"
+#include "bagl/camera.h"
 
 /* Debugging: Track number of allocations made by the engine */
 static int allocs = 0;
@@ -88,12 +91,21 @@ int main() {
   };
   BaglMesh* mesh = baglCreateMesh(state, &meshConfig);
 
-  BaglImage* image = baglLoadImage(state, "../assets/pug.png");
+  BaglImage* image = baglLoadImage(state, "../assets/bagel.jpg");
   BaglMaterialConfig materialConfig = {
       .diffuseMap = image,
   };
   BaglMaterial* material = baglCreateMaterial(state, &materialConfig);
   BaglModel* model = baglCreateModel(state, mesh, material);
+
+  BaglCamera* camera = baglCreateCamera(state, NULL);
+  baglSetCameraPosition(state, camera, 0, 0, 10);
+
+  struct {
+    float x, y, z;
+  } camPos;
+  camPos.x = camPos.y = camPos.z = 0.0f;
+  float ticks = 0;
 
   /* Render loop */
   while (!baglShouldClose(state)) {
@@ -101,13 +113,22 @@ int main() {
     baglClearFrame(state, frame, BAGL_ATTACHMENT_COLOR, 0, 0, 0, 1);
     baglClearFrame(state, frame, BAGL_ATTACHMENT_DEPTH_STENCIL, 0, 0, 0, 0);
 
+    /* Rotate the camera around the center of the scene */
+    camPos.x = cosf(ticks) * 5.0f;
+    camPos.z = sinf(ticks) * 5.0f;
+    float angle = -atan2f(camPos.x, camPos.z) * 180.0f / M_PI;
+    baglSetCameraPosition(state, camera, camPos.x, camPos.y, camPos.z);
+    baglSetCameraRotation(state, camera, 0, angle, 0);
+    ticks += 0.025f;
+
     /* Draw the model */
-    baglDraw(state, frame, model, shader);
+    baglDraw(state, frame, model, shader, camera);
     baglPresent(state, frame, NULL);
     baglPollEvents();
   }
 
   /* Cleanup */
+  baglDestroyCamera(state, &camera);
   baglDestroyImage(state, &image);
   baglDestroyModel(state, &model);
   baglDestroyMaterial(state, &material);
