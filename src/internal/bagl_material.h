@@ -15,16 +15,14 @@ typedef struct BaglImage BaglImage;
  * convention)
  */
 typedef struct BaglMaterialLayout {
-  float specularExponent;
-  float transparency;
-  float padding0[2];
   struct {
     float r, g, b;
   } ambient;
-  float padding1;
+  float padding0;
   struct {
     float r, g, b;
   } specular;
+  float specularExponent;
 } BaglMaterialLayout;
 
 typedef struct BaglMaterial {

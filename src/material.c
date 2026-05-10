@@ -42,7 +42,6 @@ BaglMaterial* baglCreateMaterial(BaglState* state,
       .ambient = {config->ambient.r, config->ambient.g, config->ambient.b},
       .specular = {config->specular.r, config->specular.g, config->specular.b},
       .specularExponent = config->specularExponent,
-      .transparency = config->transparency,
   };
 
   /* Generate the UBO */

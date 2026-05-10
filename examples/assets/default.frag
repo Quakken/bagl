@@ -9,10 +9,9 @@ vsOut;
 
 /* Materials */
 layout(std140, binding = 1) uniform Material {
-  float specularExponent;
-  float transparency;
   vec3 ambient;
   vec3 specular;
+  float specularExponent;
 };
 layout(binding = 0) uniform sampler2D diffuseMap;
 layout(binding = 1) uniform sampler2D specularMap;

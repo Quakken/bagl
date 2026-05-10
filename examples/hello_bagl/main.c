@@ -94,6 +94,7 @@ int main() {
   BaglImage* image = baglLoadImage(state, "../assets/bagel.jpg");
   BaglMaterialConfig materialConfig = {
       .diffuseMap = image,
+      .specularExponent = 1.0f,
   };
   BaglMaterial* material = baglCreateMaterial(state, &materialConfig);
   BaglModel* model = baglCreateModel(state, mesh, material);
