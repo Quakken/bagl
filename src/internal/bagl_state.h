@@ -12,6 +12,7 @@
 
 typedef struct BaglWindow BaglWindow;
 typedef struct BaglShaderStage BaglShaderStage;
+typedef struct BaglShader BaglShader;
 typedef unsigned int GLuint;
 
 struct BaglState {
@@ -21,8 +22,12 @@ struct BaglState {
 
   /* Empty VAO, used when rendering fullscreen triangles */
   GLuint emptyVAO;
-  /* Default vertex shader used to render fullscreen meshes */
+
+  /* Default shaders/stages */
   BaglShaderStage* fullscreenVS;
+  BaglShaderStage* modelVS;
+  BaglShader* modelTexturedShader;
+  BaglShader* modelColoredShader;
 };
 
 #endif

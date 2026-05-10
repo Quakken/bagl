@@ -35,13 +35,6 @@ int main() {
 
   BaglFrame* frame = baglCreateFrame(state, NULL);
 
-  /* Load shaders */
-  BaglShaderConfig shaderConfig = {
-      .vertexFilename = "../assets/default.vert",
-      .fragmentFilename = "../assets/default.frag",
-  };
-  BaglShader* shader = baglCreateShader(state, &shaderConfig);
-
   /* Create a mesh */
   BaglVertex vertices[] = {
       /* Front */
@@ -116,14 +109,14 @@ int main() {
 
     /* Rotate the camera around the center of the scene */
     camPos.x = cosf(ticks) * 5.0f;
-    camPos.z = sinf(ticks) * 5.0f;
+    camPos.z = -sinf(ticks) * 5.0f;
     float angle = -atan2f(camPos.x, camPos.z) * 180.0f / M_PI;
     baglSetCameraPosition(state, camera, camPos.x, camPos.y, camPos.z);
     baglSetCameraRotation(state, camera, 0, angle, 0);
     ticks += 0.025f;
 
     /* Draw the model */
-    baglDraw(state, frame, model, shader, camera);
+    baglDraw(state, frame, model, camera);
     baglPresent(state, frame, NULL);
     baglPollEvents();
   }
@@ -134,7 +127,6 @@ int main() {
   baglDestroyModel(state, &model);
   baglDestroyMaterial(state, &material);
   baglDestroyMesh(state, &mesh);
-  baglDestroyShader(state, &shader);
   baglDestroyFrame(state, &frame);
   baglDestroyState(&state);
   baglTerminate();

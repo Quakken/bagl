@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "bagl/shader.h"
 #include "glad/glad.h"
 
 #include "internal/bagl_state.h"
@@ -14,7 +15,6 @@ const static BaglMaterialConfig BAGL_DEFAULT_MATERIAL_CONFIG = {
     .ambient = {1.0f, 1.0f, 1.0f},
     .specular = {1.0f, 1.0f, 1.0f},
     .specularExponent = 200.0f,
-    .transparency = 0.0f,
 };
 
 BaglMaterial* baglCreateMaterial(BaglState* state,
@@ -36,6 +36,36 @@ BaglMaterial* baglCreateMaterial(BaglState* state,
   material->diffuseMap = config->diffuseMap;
   material->specularMap = config->specularMap;
   material->normalMap = config->normalMap;
+
+  /* Determine which shader to use */
+  if (config->shader) {
+    material->shader = config->shader;
+    material->ownsShader = false;
+  } else if (config->vertexFilename || config->fragmentFilename) {
+    BaglShaderConfig shaderConfig = {
+        .vertexFilename = config->vertexFilename,
+        .fragmentFilename = config->fragmentFilename,
+    };
+
+    /* Compile the shader */
+    material->shader = baglCreateShader(state, &shaderConfig);
+    if (!material->shader) {
+      baglLog(state, ERROR,
+              "Could not compile material shader (in baglCreateMaterial)");
+      state->reallocFn(material, 0);
+      return NULL;
+    }
+
+    material->ownsShader = true;
+  } else {
+    /* Choose a default shader */
+    if (material->diffuseMap) {
+      material->shader = state->modelTexturedShader;
+    } else {
+      material->shader = state->modelColoredShader;
+    }
+    material->ownsShader = false;
+  }
 
   /* Describe UBO contents */
   BaglMaterialLayout layout = {
@@ -61,6 +91,9 @@ void baglDestroyMaterial(BaglState* state, BaglMaterial** material) {
   BaglMaterial* m = *material;
 
   glDeleteBuffers(1, &m->ubo);
+  if (m->ownsShader) {
+    baglDestroyShader(state, &m->shader);
+  }
 
   state->reallocFn(m, 0);
   *material = NULL;

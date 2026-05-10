@@ -12,7 +12,8 @@ layout(std140, binding = 1) uniform Material {
   vec3 ambient;
   vec3 specular;
   float specularExponent;
-};
+}
+material;
 layout(binding = 0) uniform sampler2D diffuseMap;
 layout(binding = 1) uniform sampler2D specularMap;
 layout(binding = 2) uniform sampler2D normalMap;
@@ -22,5 +23,5 @@ layout(binding = 2) uniform sampler2D normalMap;
 
 void main() {
   vec3 diffuse = texture(diffuseMap, vsOut.texCoords).rgb;
-  color = vec4(diffuse + ambient, 1.0);
+  color = vec4(diffuse + material.ambient, 1.0);
 }

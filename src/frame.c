@@ -204,9 +204,8 @@ void baglProcessFrame(BaglState* state,
 void baglDraw(BaglState* state,
               BaglFrame* frame,
               BaglModel* model,
-              BaglShader* shader,
               BaglCamera* camera) {
-  if (!state || !frame || !model || !shader || !camera) {
+  if (!state || !frame || !model || !camera) {
     return;
   }
   /* Enable depth testing */
@@ -224,7 +223,7 @@ void baglDraw(BaglState* state,
                frame->depthStencilAttachment->height);
   }
   /* TODO: Stencil tests */
-  glUseProgram(shader->program);
+  glUseProgram(model->material->shader->program);
   /* Bind all material data */
   glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING,
                    model->material->ubo);
@@ -255,8 +254,9 @@ void baglDraw(BaglState* state,
   float s = sin(theta);
   /* Rotates around all 3 axes */
   float rotation[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-  glUniformMatrix4fv(glGetUniformLocation(shader->program, "model"), 1, true,
-                     &rotation[0]);
+  glUniformMatrix4fv(
+      glGetUniformLocation(model->material->shader->program, "model"), 1, true,
+      &rotation[0]);
   theta += 0.01f;
 
   /* Draw the model */

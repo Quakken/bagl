@@ -10,13 +10,14 @@ out VsOut {
 vsOut;
 
 /* Matrices */
-layout(std140, binding = 0) uniform Matrices {
+layout(std140, binding = 0) uniform Camera {
   mat4 view;
   mat4 projection;
-};
+}
+camera;
 uniform mat4 model;
 
 void main() {
-  gl_Position = projection * view * model * vec4(position, 1.0);
+  gl_Position = camera.projection * camera.view * model * vec4(position, 1.0);
   vsOut.texCoords = texCoords;
 }

@@ -139,13 +139,11 @@ void baglProcessFrame(BaglState* state,
  * @param state State to draw with.
  * @param frame Frame to draw to.
  * @param model Model to draw.
- * @param shader Shader to draw model with.
  * @param camera Camera to draw model with.
  */
 void baglDraw(BaglState* state,
               BaglFrame* frame,
               BaglModel* model,
-              BaglShader* shader,
               BaglCamera* camera);
 
 /**

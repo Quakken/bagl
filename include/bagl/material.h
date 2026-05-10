@@ -9,6 +9,7 @@
 
 typedef struct BaglState BaglState;
 typedef struct BaglImage BaglImage;
+typedef struct BaglShader BaglShader;
 
 /**
  * @brief Stores configuration options for a material.
@@ -21,10 +22,13 @@ typedef struct BaglMaterialConfig {
     float r, g, b;
   } specular;
   float specularExponent;
-  float transparency;
   BaglImage* diffuseMap;
   BaglImage* specularMap;
   BaglImage* normalMap;
+
+  BaglShader* shader;
+  const char* vertexFilename;
+  const char* fragmentFilename;
 } BaglMaterialConfig;
 
 /**
