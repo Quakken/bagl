@@ -108,12 +108,20 @@ int main() {
     baglClearFrame(state, frame, BAGL_ATTACHMENT_DEPTH_STENCIL, 0, 0, 0, 0);
 
     /* Rotate the camera around the center of the scene */
-    camPos.x = cosf(ticks) * 5.0f;
-    camPos.z = -sinf(ticks) * 5.0f;
+    float s = sinf(ticks);
+    float c = cosf(ticks);
+    camPos.x = c * 5.0f;
+    camPos.z = -s * 5.0f;
     float angle = -atan2f(camPos.x, camPos.z) * 180.0f / M_PI;
     baglSetCameraPosition(state, camera, camPos.x, camPos.y, camPos.z);
     baglSetCameraRotation(state, camera, 0, angle, 0);
     ticks += 0.025f;
+
+    /* Rotate the box around the x axis and change scale */
+    baglSetModelScale(state, model, 1.0f + fabsf(c), 1.0f + fabsf(c),
+                      1.0f + fabsf(c));
+    baglSetModelRotation(state, model, c * 180.0f, 0, 0);
+    baglSetModelPosition(state, model, 0, s, 0);
 
     /* Draw the model */
     baglDraw(state, frame, model, camera);

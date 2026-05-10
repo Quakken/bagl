@@ -40,6 +40,8 @@ BaglModel* baglCreateModel(BaglState* state,
     model->material = baglCreateMaterial(state, NULL);
     model->ownsMaterial = true;
   }
+  memset(&model->transformConfig, 0, sizeof(model->transformConfig));
+  model->isTransformDirty = true;
 
   baglLog(state, INFO, "Model created");
   return model;
@@ -48,6 +50,48 @@ BaglModel* baglCreateModel(BaglState* state,
 BaglModel* baglLoadOBJ(BaglState* state, const char* filename) {
   /* TODO */
   return NULL;
+}
+
+void baglSetModelPosition(BaglState* state,
+                          BaglModel* model,
+                          float x,
+                          float y,
+                          float z) {
+  if (!state || !model) {
+    return;
+  }
+  model->transformConfig.position.x = x;
+  model->transformConfig.position.y = y;
+  model->transformConfig.position.z = z;
+  model->isTransformDirty = true;
+}
+
+void baglSetModelRotation(BaglState* state,
+                          BaglModel* model,
+                          float x,
+                          float y,
+                          float z) {
+  if (!state || !model) {
+    return;
+  }
+  model->transformConfig.rotation.x = x;
+  model->transformConfig.rotation.y = y;
+  model->transformConfig.rotation.z = z;
+  model->isTransformDirty = true;
+}
+
+void baglSetModelScale(BaglState* state,
+                       BaglModel* model,
+                       float x,
+                       float y,
+                       float z) {
+  if (!state || !model) {
+    return;
+  }
+  model->transformConfig.scale.x = x;
+  model->transformConfig.scale.y = y;
+  model->transformConfig.scale.z = z;
+  model->isTransformDirty = true;
 }
 
 void baglDestroyModel(BaglState* state, BaglModel** model) {

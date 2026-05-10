@@ -27,6 +27,9 @@ const static int BAGL_NORMAL_TEXTURE_UNIT = 2;
 /* First texture unit reserved for color textures */
 const static int BAGL_COLOR_TEXTURE_UNIT = 3;
 
+/* Name of the model matrix uniform in shaders */
+const static char* BAGL_MODEL_UNIFORM_NAME = "model";
+
 typedef struct BaglShaderStage {
   BaglStageType type;
   GLuint shader;

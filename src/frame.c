@@ -246,18 +246,14 @@ void baglDraw(BaglState* state,
   glBindBuffer(GL_UNIFORM_BUFFER, camera->ubo);
   glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATRIX_BINDING, camera->ubo);
 
-  /* TODO: Push model matrix (owned by model) */
-
-  /* TEMP */
-  static float theta = 0;
-  float c = cos(theta);
-  float s = sin(theta);
-  /* Rotates around all 3 axes */
-  float rotation[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-  glUniformMatrix4fv(
-      glGetUniformLocation(model->material->shader->program, "model"), 1, true,
-      &rotation[0]);
-  theta += 0.01f;
+  /* Bind model matrix */
+  if (model->isTransformDirty) {
+    baglGenTransform(&model->transform[0], &model->transformConfig);
+    model->isTransformDirty = false;
+  }
+  glUniformMatrix4fv(glGetUniformLocation(model->material->shader->program,
+                                          BAGL_MODEL_UNIFORM_NAME),
+                     1, false, &model->transform[0]);
 
   /* Draw the model */
   glBindFramebuffer(GL_FRAMEBUFFER, frame->fbo);
