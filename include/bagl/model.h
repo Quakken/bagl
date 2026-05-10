@@ -29,14 +29,6 @@ BaglModel* baglCreateModel(BaglState* state,
                            BaglMaterial* material);
 
 /**
- * @brief Loads a model from an obj file.
- * @param state State to load model with.
- * @param filename Name of the file to load.
- * @return Pointer to the model, or NULL if the model could not be loaded.
- */
-BaglModel* baglLoadOBJ(BaglState* state, const char* filename);
-
-/**
  * @brief Sets the position of a model.
  * @param state State of the model to modify.
  * @param model Model to modify.

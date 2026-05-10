@@ -47,11 +47,6 @@ BaglModel* baglCreateModel(BaglState* state,
   return model;
 }
 
-BaglModel* baglLoadOBJ(BaglState* state, const char* filename) {
-  /* TODO */
-  return NULL;
-}
-
 void baglSetModelPosition(BaglState* state,
                           BaglModel* model,
                           float x,
