@@ -147,6 +147,10 @@ bool baglProcessOBJVertex(BaglState* state,
                           char* token,
                           char* context,
                           BaglOBJ* obj) {
+  if (!state || !token || !context || !obj) {
+    return false;
+  }
+
   /* Grow vertex array if necessary */
   if (obj->capVertices <= obj->numVertices &&
       !baglGrowArray(state, (void**)&obj->vertices, &obj->capVertices,
@@ -196,6 +200,108 @@ bool baglProcessOBJVertex(BaglState* state,
   return true;
 }
 
+bool baglProcessOBJTexCoord(BaglState* state,
+                            char* token,
+                            char* context,
+                            BaglOBJ* obj) {
+  if (!state || !token || !context || !obj) {
+    return false;
+  }
+
+  /* Grow tex coord array if necessary */
+  if (obj->capTexCoords <= obj->numTexCoords &&
+      !baglGrowArray(state, (void**)&obj->texCoords, &obj->capTexCoords,
+                     sizeof(BaglOBJTexCoord))) {
+    baglLog(
+        state, ERROR,
+        "Could not grow texture coordinate array (in baglProcessOBJTexCoord)");
+    return false;
+  }
+
+  BaglOBJTexCoord texCoord = {};
+
+  /* Read u and v components */
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No u given for texture coordinate (in baglProcessOBJTexCoord)");
+    return false;
+  }
+  texCoord.u = strtof(token, NULL);
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No v given for texture coordinate (in baglProcessOBJTexCoord)");
+    return false;
+  }
+  texCoord.v = strtof(token, NULL);
+
+  /* W is optional (not supported) */
+  if (baglGetNextToken(NULL, &context)) {
+    baglLog(state, WARNING,
+            "Bagl does not support three-dimensional texture coordinates (in "
+            "baglProcessOBJTexCoord)");
+  }
+
+  /* Warn if there are any tokens remaining */
+  if (baglGetNextToken(NULL, &context)) {
+    baglLog(state, WARNING,
+            "Unused tokens at end of line (in baglProcessOBJTexCoord)");
+  }
+
+  obj->texCoords[obj->numTexCoords] = texCoord;
+  ++obj->numTexCoords;
+  return true;
+}
+
+bool baglProcessOBJNormal(BaglState* state,
+                          char* token,
+                          char* context,
+                          BaglOBJ* obj) {
+  if (!state || !token || !context || !obj) {
+    return false;
+  }
+
+  /* Grow vertex array if necessary */
+  if (obj->capNormals <= obj->numNormals &&
+      !baglGrowArray(state, (void**)&obj->normals, &obj->capNormals,
+                     sizeof(BaglOBJVertex))) {
+    baglLog(state, ERROR,
+            "Could not grow normal array (in baglProcessOBJNormal)");
+    return false;
+  }
+
+  BaglOBJNormal normal = {};
+
+  /* Read each entry */
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No x coordinate given to normal (in baglProcessOBJNormal)");
+    return false;
+  }
+  normal.x = strtof(token, NULL);
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No y coordinate given to normal (in baglProcessOBJNormal)");
+    return false;
+  }
+  normal.y = strtof(token, NULL);
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No z coordinate given to normal (in baglProcessOBJNormal)");
+    return false;
+  }
+  normal.z = strtof(token, NULL);
+
+  /* Warn if there are any tokens remaining */
+  if (baglGetNextToken(NULL, &context)) {
+    baglLog(state, WARNING,
+            "Unused tokens at end of line (in baglProcessOBJNormal)");
+  }
+
+  obj->normals[obj->numNormals] = normal;
+  ++obj->numNormals;
+  return true;
+}
+
 /* Processes a single line of an OBJ file */
 bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
   if (!state || !line || !data) {
@@ -215,6 +321,21 @@ bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
   if (strcmp(token, "v") == 0) {
     if (!baglProcessOBJVertex(state, token, context, obj)) {
       baglLog(state, ERROR, "Could not process vertex (in baglProcessOBJLine)");
+      return false;
+    }
+  }
+  /* Texture coordinates */
+  else if (strcmp(token, "vt") == 0) {
+    if (!baglProcessOBJTexCoord(state, token, context, obj)) {
+      baglLog(state, ERROR,
+              "Could not process texture coordinate (in baglProcessOBJLine)");
+      return false;
+    }
+  }
+  /* Normals */
+  else if (strcmp(token, "vn") == 0) {
+    if (!baglProcessOBJNormal(state, token, context, obj)) {
+      baglLog(state, ERROR, "Could not process normal (in baglProcessOBJLine)");
       return false;
     }
   }
