@@ -149,9 +149,9 @@ int main() {
 }
 
 void* trackedRealloc(void* data, size_t size) {
-  if (!data) {
+  if (!data && size > 0) {
     ++allocs;
-  } else if (size == 0) {
+  } else if (data && size == 0) {
     --allocs;
   }
   return realloc(data, size);

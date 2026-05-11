@@ -12,8 +12,44 @@
 #include "internal/bagl_state.h"
 #include "internal/utils.h"
 
+typedef struct BaglOBJVertex {
+  float x, y, z;
+} BaglOBJVertex;
+
+typedef struct BaglOBJTexCoord {
+  float u, v;
+} BaglOBJTexCoord;
+
+typedef struct BaglOBJNormal {
+  float x, y, z;
+} BaglOBJNormal;
+
+typedef struct BaglOBJIndices {
+  size_t vertexIdx;
+  size_t texCoordIdx;
+  size_t normalIdx;
+} BaglOBJIndices;
+
+typedef struct BaglOBJFace {
+  size_t numIndices;
+  size_t capIndices;
+  BaglOBJIndices* indices;
+} BaglOBJFace;
+
 /* Stores data for an OBJ file */
 typedef struct BaglOBJ {
+  size_t numVertices;
+  size_t capVertices; /* Capacity of the vertices array */
+  BaglOBJVertex* vertices;
+  size_t numTexCoords;
+  size_t capTexCoords; /* Capacity of the tex coords array */
+  BaglOBJTexCoord* texCoords;
+  size_t numNormals;
+  size_t capNormals; /* Capacity of the normals array */
+  BaglOBJNormal* normals;
+  size_t numFaces;
+  size_t capFaces; /* Capacity of the faces array */
+  BaglOBJFace* faces;
 } BaglOBJ;
 
 /* Stores data for an MTL file */
@@ -37,13 +73,32 @@ static char* baglGetNextToken(const char* delimiters, char** context) {
                   context);
 }
 
+/* Attempts to grow a dynamically-sized array */
+static bool baglGrowArray(BaglState* state,
+                          void** array,
+                          size_t* capacity,
+                          size_t elemSize) {
+  if (!state || !capacity) {
+    return false;
+  }
+  size_t numElems = (*capacity == 0) ? 1 : *capacity * 2;
+  void* result = state->reallocFn(*array, numElems * elemSize);
+  if (!result) {
+    baglLog(state, ERROR, "Could not grow array (in baglGrowArray)");
+    return false;
+  }
+  *capacity = numElems;
+  *array = result;
+  return true;
+}
+
 /* Parses the lines of a file, invoking the given callback for each line */
 static bool baglParseLines(BaglState* state,
                            const char* filename,
                            BaglLineCallback callback,
                            void* data) {
   if (!state || !filename || !callback) {
-    return NULL;
+    return false;
   }
 
   /* Load file data */
@@ -57,7 +112,13 @@ static bool baglParseLines(BaglState* state,
   /* Get file contents */
   char buffer[128];
   while (fgets(buffer, sizeof(buffer), file)) {
-    callback(state, &buffer[0], data);
+    if (!callback(state, &buffer[0], data)) {
+      baglLog(
+          state, WARNING,
+          "Error occurred when processing file contents (in baglParseLines)");
+      fclose(file);
+      return false;
+    }
   }
   if (!feof(file)) {
     baglLog(state, ERROR, "Error reading file (in baglParseLines)");
@@ -69,18 +130,95 @@ static bool baglParseLines(BaglState* state,
   return true;
 }
 
+static void baglDestroyOBJ(BaglState* state, BaglOBJ* obj) {
+  if (!obj) {
+    return;
+  }
+  state->reallocFn(obj->vertices, 0);
+  state->reallocFn(obj->texCoords, 0);
+  state->reallocFn(obj->normals, 0);
+  for (size_t i = 0; i < obj->numFaces; ++i) {
+    state->reallocFn(obj->faces[i].indices, 0);
+  }
+  state->reallocFn(obj->faces, 0);
+}
+
+bool baglProcessOBJVertex(BaglState* state,
+                          char* token,
+                          char* context,
+                          BaglOBJ* obj) {
+  /* Grow vertex array if necessary */
+  if (obj->capVertices <= obj->numVertices &&
+      !baglGrowArray(state, (void**)&obj->vertices, &obj->capVertices,
+                     sizeof(BaglOBJVertex))) {
+    baglLog(state, ERROR,
+            "Could not grow vertex array (in baglProcessOBJVertex)");
+    return false;
+  }
+
+  BaglOBJVertex vertex = {};
+
+  /* Read each position entry */
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No x position given to vertex (in baglProcessOBJVertex)");
+    return false;
+  }
+  vertex.x = strtof(token, NULL);
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No y position given to vertex (in baglProcessOBJVertex)");
+    return false;
+  }
+  vertex.y = strtof(token, NULL);
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR,
+            "No z position given to vertex (in baglProcessOBJVertex)");
+    return false;
+  }
+  vertex.z = strtof(token, NULL);
+
+  /* W is optional (not supported) */
+  if (baglGetNextToken(NULL, &context)) {
+    baglLog(state, WARNING,
+            "Bagl does not support four-dimensional vertices (in "
+            "baglProcessOBJVertex)");
+  }
+
+  /* Warn if there are any tokens remaining */
+  if (baglGetNextToken(NULL, &context)) {
+    baglLog(state, WARNING,
+            "Unused tokens at end of line (in baglProcessOBJVertex)");
+  }
+
+  obj->vertices[obj->numVertices] = vertex;
+  ++obj->numVertices;
+  return true;
+}
+
 /* Processes a single line of an OBJ file */
 bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
-  /* TEMP */
-  /* Tokenize line */
-  char* context;
-  char* token = baglTokenize(line, NULL, &context);
-  while (token) {
-    /* Process tokens */
-    baglLog(state, WARNING, token);
-    token = baglGetNextToken(NULL, &context);
+  if (!state || !line || !data) {
+    return false;
   }
-  baglLog(state, ERROR, "newline");
+  BaglOBJ* obj = data;
+
+  /* Tokenize the line */
+  char* context = NULL;
+  char* token = baglTokenize(line, NULL, &context);
+  /* Ignore comments */
+  if (token[0] == '#') {
+    return true;
+  }
+
+  /* Vertex entry */
+  if (strcmp(token, "v") == 0) {
+    if (!baglProcessOBJVertex(state, token, context, obj)) {
+      baglLog(state, ERROR, "Could not process vertex (in baglProcessOBJLine)");
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -89,6 +227,7 @@ BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
   /* Process all lines of the OBJ file */
   if (!baglParseLines(state, filename, baglProcessOBJLine, &obj)) {
     baglLog(state, ERROR, "Error parsing obj file (in baglLoadOBJ)");
+    baglDestroyOBJ(state, &obj);
     return NULL;
   }
 
@@ -97,6 +236,7 @@ BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
   /* Generate vertex buffer */
   /* Generate element buffer */
   /* Create the mesh w/ vertices and elements */
+  baglDestroyOBJ(state, &obj);
   return NULL;
 }
 
