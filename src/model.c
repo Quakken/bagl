@@ -40,7 +40,16 @@ BaglModel* baglCreateModel(BaglState* state,
     model->material = baglCreateMaterial(state, NULL);
     model->ownsMaterial = true;
   }
-  memset(&model->transformConfig, 0, sizeof(model->transformConfig));
+  model->transformConfig.position.x = 0.0f;
+  model->transformConfig.position.y = 0.0f;
+  model->transformConfig.position.z = 0.0f;
+  model->transformConfig.rotation.x = 0.0f;
+  model->transformConfig.rotation.y = 0.0f;
+  model->transformConfig.rotation.z = 0.0f;
+  model->transformConfig.scale.x = 1.0f;
+  model->transformConfig.scale.y = 1.0f;
+  model->transformConfig.scale.z = 1.0f;
+
   model->isTransformDirty = true;
 
   baglLog(state, INFO, "Model created");

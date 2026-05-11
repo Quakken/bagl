@@ -16,6 +16,7 @@ target_sources(bagl
     "${BAGL_SOURCE_DIR}/mesh.c"
     "${BAGL_SOURCE_DIR}/model.c"
     "${BAGL_SOURCE_DIR}/camera.c"
+    "${BAGL_SOURCE_DIR}/obj.c"
     "${BAGL_SOURCE_DIR}/internal/matrix.c"
     "${BAGL_SOURCE_DIR}/internal/matrix.h"
     "${BAGL_SOURCE_DIR}/internal/bagl_window.c"
@@ -43,6 +44,7 @@ target_sources(bagl
       "${BAGL_INCLUDE_DIR}/bagl/material.h"
       "${BAGL_INCLUDE_DIR}/bagl/model.h"
       "${BAGL_INCLUDE_DIR}/bagl/camera.h"
+      "${BAGL_INCLUDE_DIR}/bagl/obj.h"
 )
 target_include_directories(bagl
   PUBLIC

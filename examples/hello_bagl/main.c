@@ -1,3 +1,4 @@
+#include "bagl/obj.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdlib.h>
@@ -100,6 +101,8 @@ int main() {
   } camPos;
   camPos.x = camPos.y = camPos.z = 0.0f;
   float ticks = 0;
+
+  baglLoadOBJ(state, "../assets/test.obj");
 
   /* Render loop */
   while (!baglShouldClose(state)) {
