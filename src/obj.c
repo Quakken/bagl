@@ -1,5 +1,7 @@
 #include "bagl/obj.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,12 +30,15 @@ typedef struct BaglOBJIndices {
   size_t vertexIdx;
   size_t texCoordIdx;
   size_t normalIdx;
+
+  struct BaglOBJIndices* next;
+  struct BaglOBJIndices* prev;
 } BaglOBJIndices;
 
 typedef struct BaglOBJFace {
   size_t numIndices;
-  size_t capIndices;
-  BaglOBJIndices* indices;
+  BaglOBJIndices* front;
+  BaglOBJIndices* back;
 } BaglOBJFace;
 
 /* Stores data for an OBJ file */
@@ -71,6 +76,48 @@ static char* baglTokenize(char* str, const char* delimiters, char** context) {
 static char* baglGetNextToken(const char* delimiters, char** context) {
   return strtok_s(NULL, delimiters ? delimiters : BAGL_DEFAULT_DELIMITERS,
                   context);
+}
+
+/* Inserts an element into an indices list */
+static BaglOBJIndices* baglInsertIndices(BaglState* state,
+                                         BaglOBJIndices** after,
+                                         size_t vertex,
+                                         size_t texCoord,
+                                         size_t normal) {
+  if (!after || !state) {
+    return NULL;
+  }
+  BaglOBJIndices indices = {
+      .vertexIdx = vertex,
+      .texCoordIdx = texCoord,
+      .normalIdx = normal,
+  };
+  /* List is unpopulated */
+  if (*after == NULL) {
+    *after = state->reallocFn(NULL, sizeof(BaglOBJIndices));
+    if (*after == NULL) {
+      baglLog(state, ERROR,
+              "Could not allocate indices (in baglInsertIndices)");
+      return NULL;
+    }
+    /* Make the list loop */
+    indices.prev = *after;
+    indices.next = *after;
+    *(*after) = indices;
+    return *after;
+  }
+  /* Link indices to previous and next elements */
+  BaglOBJIndices* prev = *after;
+  indices.prev = prev;
+  indices.next = prev->next;
+  BaglOBJIndices* curr = state->reallocFn(NULL, sizeof(BaglOBJIndices));
+  if (!curr) {
+    baglLog(state, ERROR, "Could not allocate indices (in baglInsertIndices)");
+    return NULL;
+  }
+  *curr = indices;
+  prev->next = curr;
+  return curr;
 }
 
 /* Attempts to grow a dynamically-sized array */
@@ -138,7 +185,12 @@ static void baglDestroyOBJ(BaglState* state, BaglOBJ* obj) {
   state->reallocFn(obj->texCoords, 0);
   state->reallocFn(obj->normals, 0);
   for (size_t i = 0; i < obj->numFaces; ++i) {
-    state->reallocFn(obj->faces[i].indices, 0);
+    BaglOBJIndices* elem = obj->faces[i].front;
+    for (size_t j = 0; j < obj->faces[i].numIndices; ++j) {
+      BaglOBJIndices* prev = elem;
+      elem = elem->next;
+      state->reallocFn(prev, 0);
+    }
   }
   state->reallocFn(obj->faces, 0);
 }
@@ -322,16 +374,7 @@ bool baglProcessOBJFace(BaglState* state,
 
   /* Iterate over vertex indices */
   while ((token = baglGetNextToken(NULL, &context))) {
-    /* Grow the indices array if necessary */
-    if (face.capIndices <= face.numIndices &&
-        !baglGrowArray(state, (void**)&face.indices, &face.capIndices,
-                       sizeof(BaglOBJIndices))) {
-      baglLog(state, ERROR,
-              "Could not grow indices array (in baglProcessOBJFace)");
-      return false;
-    }
-
-    BaglOBJIndices indices = {};
+    size_t indices[3] = {0};
 
     /* Process the indices */
     size_t entry = 0;
@@ -350,20 +393,12 @@ bool baglProcessOBJFace(BaglState* state,
         if (value < 1) {
           baglLog(state, WARNING, "Invalid face index (in baglProcessOBJFace)");
         } else {
-          switch (entry) {
-            case 0:
-              indices.vertexIdx = value;
-              break;
-            case 1:
-              indices.texCoordIdx = value;
-              break;
-            case 2:
-              indices.normalIdx = value;
-              break;
-            default:
-              baglLog(state, WARNING,
-                      "Unused face entry (in baglProcessOBJFace)");
-              break;
+          if (entry < 3) {
+            indices[entry] = value;
+          } else {
+            baglLog(state, WARNING,
+                    "Unused face entry (in baglProcessOBJFace)");
+            break;
           }
         }
         start = end + 1;
@@ -374,7 +409,12 @@ bool baglProcessOBJFace(BaglState* state,
       }
     }
 
-    face.indices[face.numIndices] = indices;
+    BaglOBJIndices* inserted = baglInsertIndices(state, &face.back, indices[0],
+                                                 indices[1], indices[2]);
+    if (!face.front) {
+      face.front = inserted;
+    }
+    face.back = inserted;
     ++face.numIndices;
   }
 
@@ -439,6 +479,32 @@ bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
   }
 
   return true;
+}
+
+/*
+ * Triangulates a face using ear clipping. Returns whether triangulation was
+ * successful.
+ * The output face will store vertices in a triangle strip format.
+ */
+bool baglTriangulateFace(BaglState* state,
+                         BaglOBJ* obj,
+                         BaglOBJFace* src,
+                         BaglOBJFace* out) {
+  if (!src || !out) {
+    return false;
+  }
+
+  /*
+   * Algorithm overview:
+   *
+   * for vertex in src->indices
+   *   if vertex is ear
+   *     erase vertex from src->indices
+   *     add prev->vertex->next triangle to out->vertices
+   *   else
+   *     go to next vertex
+   */
+  return false;
 }
 
 BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
