@@ -428,6 +428,16 @@ bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
     }
   }
 
+  /* Unsupported features */
+  else if (strcmp(token, "vp") == 0) {
+    baglLog(
+        state, WARNING,
+        "Bagl does not support parametric vertices (in baglProcessOBJLine)");
+  } else if (strcmp(token, "l") == 0) {
+    baglLog(state, WARNING,
+            "Bagl does not support polylines (in baglProcessOBJLine)");
+  }
+
   return true;
 }
 
