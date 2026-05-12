@@ -260,7 +260,7 @@ bool baglProcessOBJNormal(BaglState* state,
     return false;
   }
 
-  /* Grow vertex array if necessary */
+  /* Grow normal array if necessary */
   if (obj->capNormals <= obj->numNormals &&
       !baglGrowArray(state, (void**)&obj->normals, &obj->capNormals,
                      sizeof(BaglOBJVertex))) {
@@ -302,6 +302,87 @@ bool baglProcessOBJNormal(BaglState* state,
   return true;
 }
 
+bool baglProcessOBJFace(BaglState* state,
+                        char* token,
+                        char* context,
+                        BaglOBJ* obj) {
+  if (!state || !token || !context || !obj) {
+    return false;
+  }
+
+  /* Grow faces array if necessary */
+  if (obj->capFaces <= obj->numFaces &&
+      !baglGrowArray(state, (void**)&obj->faces, &obj->capFaces,
+                     sizeof(BaglOBJFace))) {
+    baglLog(state, ERROR, "Could not grow faces array (in baglProcessOBJFace)");
+    return false;
+  }
+
+  BaglOBJFace face = {};
+
+  /* Iterate over vertex indices */
+  while ((token = baglGetNextToken(NULL, &context))) {
+    /* Grow the indices array if necessary */
+    if (face.capIndices <= face.numIndices &&
+        !baglGrowArray(state, (void**)&face.indices, &face.capIndices,
+                       sizeof(BaglOBJIndices))) {
+      baglLog(state, ERROR,
+              "Could not grow indices array (in baglProcessOBJFace)");
+      return false;
+    }
+
+    BaglOBJIndices indices = {};
+
+    /* Process the indices */
+    size_t entry = 0;
+    char* start = token;
+    char* end = token;
+    while (true) {
+      ++end;
+      if (*start == '/') {
+        start = end + 1;
+        ++entry;
+        continue;
+      }
+      if (*end == '/' || *end == '\0') {
+        /* Determine entry value */
+        size_t value = strtoul(start, &end, 10);
+        if (value < 1) {
+          baglLog(state, WARNING, "Invalid face index (in baglProcessOBJFace)");
+        } else {
+          switch (entry) {
+            case 0:
+              indices.vertexIdx = value;
+              break;
+            case 1:
+              indices.texCoordIdx = value;
+              break;
+            case 2:
+              indices.normalIdx = value;
+              break;
+            default:
+              baglLog(state, WARNING,
+                      "Unused face entry (in baglProcessOBJFace)");
+              break;
+          }
+        }
+        start = end + 1;
+        ++entry;
+      }
+      if (*end == '\0') {
+        break;
+      }
+    }
+
+    face.indices[face.numIndices] = indices;
+    ++face.numIndices;
+  }
+
+  obj->faces[obj->numFaces] = face;
+  ++obj->numFaces;
+  return true;
+}
+
 /* Processes a single line of an OBJ file */
 bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
   if (!state || !line || !data) {
@@ -336,6 +417,13 @@ bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
   else if (strcmp(token, "vn") == 0) {
     if (!baglProcessOBJNormal(state, token, context, obj)) {
       baglLog(state, ERROR, "Could not process normal (in baglProcessOBJLine)");
+      return false;
+    }
+  }
+  /* Faces */
+  else if (strcmp(token, "f") == 0) {
+    if (!baglProcessOBJFace(state, token, context, obj)) {
+      baglLog(state, ERROR, "Could not process face (in baglProcessOBJLine)");
       return false;
     }
   }
