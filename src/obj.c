@@ -592,19 +592,63 @@ BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
   /* Triangulate faces */
   BaglOBJFace* triangulated =
       state->reallocFn(NULL, obj.numFaces * sizeof(BaglOBJFace));
+  size_t numElements = 0;
   for (size_t i = 0; i < obj.numFaces; ++i) {
     if (!baglTriangulateFace(state, &obj, obj.faces + i, triangulated + i)) {
       baglLog(state, WARNING, "Triangulation failed (in baglLoadOBJ)");
     }
+    numElements += triangulated[i].numIndices;
   }
   state->reallocFn(obj.faces, 0);
   obj.faces = triangulated;
 
-  /* Generate vertex buffer */
-  /* Generate element buffer */
-  /* Create the mesh w/ vertices and elements */
+  /* Allocate buffers */
+  uint32_t* elements = state->reallocFn(NULL, sizeof(uint32_t) * numElements);
+  BaglVertex* vertices =
+      state->reallocFn(NULL, sizeof(BaglVertex) * numElements);
+
+  /* Iterate over each face */
+  size_t currentElem = 0;
+  for (size_t i = 0; i < obj.numFaces; ++i) {
+    BaglOBJFace* face = obj.faces + i;
+    /* Iterate over each index */
+    BaglOBJIndices* indices = face->front;
+    do { /* Add the vertex data to the vertex buffer */
+      vertices[currentElem].position.x = obj.vertices[indices->vertexIdx].x;
+      vertices[currentElem].position.y = obj.vertices[indices->vertexIdx].y;
+      vertices[currentElem].position.z = obj.vertices[indices->vertexIdx].z;
+      vertices[currentElem].normal.x = obj.normals[indices->normalIdx].x;
+      vertices[currentElem].normal.y = obj.normals[indices->normalIdx].y;
+      vertices[currentElem].normal.z = obj.normals[indices->normalIdx].z;
+      vertices[currentElem].texCoords.u = obj.texCoords[indices->texCoordIdx].u;
+      vertices[currentElem].texCoords.v = obj.texCoords[indices->texCoordIdx].v;
+
+      /* Add element to the element buffer */
+      elements[currentElem] = currentElem;
+
+      ++currentElem;
+      indices = indices->next;
+    } while (indices != face->back->next);
+  }
   baglDestroyOBJ(state, &obj);
-  return NULL;
+
+  /* Create the mesh w/ vertices and elements */
+  BaglMeshConfig config = {
+      .numVertices = numElements,
+      .vertices = vertices,
+      .numIndices = numElements,
+      .indices = elements,
+  };
+  BaglMesh* mesh = baglCreateMesh(state, &config);
+  state->reallocFn(vertices, 0);
+  state->reallocFn(elements, 0);
+
+  if (!mesh) {
+    baglLog(state, ERROR, "Could not load mesh (in baglLoadOBJ)");
+    return NULL;
+  }
+
+  return mesh;
 }
 
 BaglMaterial* baglLoadMTL(BaglState* state, const char* filename) {

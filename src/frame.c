@@ -222,6 +222,8 @@ void baglDraw(BaglState* state,
     glViewport(0, 0, frame->depthStencilAttachment->width,
                frame->depthStencilAttachment->height);
   }
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
   /* TODO: Stencil tests */
   glUseProgram(model->material->shader->program);
   /* Bind all material data */
