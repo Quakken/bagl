@@ -35,6 +35,9 @@ typedef struct BaglMaterial {
   BaglShader* shader;
   GLuint ubo;
   bool ownsShader;
+  bool ownsDiffuse;
+  bool ownsSpecular;
+  bool ownsNormal;
 } BaglMaterial;
 
 #endif

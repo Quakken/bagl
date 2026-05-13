@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bagl/image.h"
 #include "bagl/mesh.h"
 #include "bagl/material.h"
 #include "bagl/model.h"
@@ -57,6 +58,17 @@ typedef struct BaglOBJ {
 
 /* Stores data for an MTL file */
 typedef struct BaglMTL {
+  struct {
+    float r, g, b;
+  } ambient;
+  struct {
+    float r, g, b;
+  } specular;
+  float specularExponent;
+  BaglImage* diffuseMap;
+  BaglImage* specularMap;
+  BaglImage* normalMap;
+  char* name;
 } BaglMTL;
 
 /* Callback to process a line of a file */
@@ -445,7 +457,7 @@ static bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
   char* context = NULL;
   char* token = baglTokenize(line, NULL, &context);
   /* Ignore comments */
-  if (token[0] == '#') {
+  if (!token || token[0] == '#') {
     return true;
   }
 
@@ -679,8 +691,147 @@ BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
   return mesh;
 }
 
+static void baglDestroyMTL(BaglState* state, BaglMTL* mtl) {
+  if (!state || !mtl) {
+    return;
+  }
+  baglDestroyImage(state, &mtl->diffuseMap);
+  baglDestroyImage(state, &mtl->specularMap);
+  baglDestroyImage(state, &mtl->normalMap);
+}
+
+static bool baglGetMTLColor(BaglState* state,
+                            char* context,
+                            float* r,
+                            float* g,
+                            float* b) {
+  if (!state || !context || !r || !g || !b) {
+    return false;
+  }
+  char* token;
+  if ((token = baglGetNextToken(NULL, &context))) {
+    *r = strtof(token, NULL);
+  } else {
+    baglLog(state, ERROR, "Color is missing r channel (in baglGetMTLColor)");
+    return false;
+  }
+  if ((token = baglGetNextToken(NULL, &context))) {
+    *g = strtof(token, NULL);
+  } else {
+    baglLog(state, ERROR, "Color is missing g channel (in baglGetMTLColor)");
+    return false;
+  }
+  if ((token = baglGetNextToken(NULL, &context))) {
+    *b = strtof(token, NULL);
+  } else {
+    baglLog(state, ERROR, "Color is missing r channel (in baglGetMTLColor)");
+    return false;
+  }
+  return true;
+}
+
+static BaglImage* baglGetMTLImage(BaglState* state, char* context) {
+  if (!state || !context) {
+    return false;
+  }
+
+  char* token;
+  if (!(token = baglGetNextToken(NULL, &context))) {
+    baglLog(state, ERROR, "No image path given (in baglGetMTLImage)");
+    return false;
+  }
+  BaglImage* img = baglLoadImage(state, token);
+  if (!img) {
+    baglLog(state, ERROR, "Could not load image (in baglGetMTLImage)");
+    return false;
+  }
+  return img;
+}
+
+static bool baglProcessMTLLine(BaglState* state, char* line, void* data) {
+  if (!state || !line || !data) {
+    return false;
+  }
+  BaglMTL* mtl = data;
+
+  /* Tokenize the line */
+  char* context = NULL;
+  char* token = baglTokenize(line, NULL, &context);
+  /* Ignore comments */
+  if (!token || token[0] == '#') {
+    return true;
+  }
+
+  /* New material */
+  if (strcmp(token, "newmtl") == 0) {
+    /* TODO: Support multiple materials */
+  }
+
+  /* Colors */
+  else if (strcmp(token, "Ka") == 0 || strcmp(token, "Kd") == 0) {
+    /* Ambient/diffuse color */
+    baglGetMTLColor(state, context, &mtl->ambient.r, &mtl->ambient.g,
+                    &mtl->ambient.b);
+  } else if (strcmp(token, "Ks") == 0) {
+    /* Specular color */
+    baglGetMTLColor(state, context, &mtl->specular.r, &mtl->specular.g,
+                    &mtl->specular.b);
+  } else if (strcmp(token, "Ns") == 0) {
+    /* Specular exponent */
+    if ((token = baglGetNextToken(NULL, &context))) {
+      mtl->specularExponent = strtof(token, NULL);
+    } else {
+      baglLog(state, ERROR,
+              "Specular exponent not defined (in baglGetMTLColor)");
+      return false;
+    }
+  }
+
+  /* Maps */
+  else if (strcmp(token, "map_Ka") == 0 || strcmp(token, "map_Kd") == 0) {
+    /* Diffuse map */
+    if (mtl->diffuseMap) {
+      baglDestroyImage(state, &mtl->diffuseMap);
+    }
+    mtl->diffuseMap = baglGetMTLImage(state, context);
+  } else if (strcmp(token, "map_Ks") == 0) {
+    /* Specular map */
+    if (mtl->specularMap) {
+      baglDestroyImage(state, &mtl->specularMap);
+    }
+    mtl->specularMap = baglGetMTLImage(state, context);
+  } else if (strcmp(token, "map_bump") == 0 || strcmp(token, "bump") == 0) {
+    /* Bump map */
+    if (mtl->normalMap) {
+      baglDestroyImage(state, &mtl->normalMap);
+    }
+    mtl->normalMap = baglGetMTLImage(state, context);
+  }
+
+  return true;
+}
+
 BaglMaterial* baglLoadMTL(BaglState* state, const char* filename) {
-  return NULL;
+  BaglMTL mtl = {};
+  /* Process all lines of the OBJ file */
+  if (!baglParseLines(state, filename, baglProcessMTLLine, &mtl)) {
+    baglLog(state, ERROR, "Error parsing mtl file (in baglLoadMTL)");
+    return NULL;
+  }
+
+  /* Create a material with the given properties */
+  BaglMaterialConfig config = {
+      .ambient = {mtl.ambient.r, mtl.ambient.g, mtl.ambient.b},
+      .specular = {mtl.specular.r, mtl.specular.b, mtl.specular.b},
+      .specularExponent = mtl.specularExponent,
+      .diffuseMap = mtl.diffuseMap,
+      .specularMap = mtl.specularMap,
+      .normalMap = mtl.normalMap,
+  };
+  BaglMaterial* material = baglCreateMaterial(state, &config);
+
+  baglDestroyMTL(state, &mtl);
+  return material;
 }
 
 BaglModel* baglLoadModel(BaglState* state,

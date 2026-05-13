@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "bagl/image.h"
 #include "bagl/shader.h"
 #include "glad/glad.h"
 
@@ -93,6 +94,15 @@ void baglDestroyMaterial(BaglState* state, BaglMaterial** material) {
   glDeleteBuffers(1, &m->ubo);
   if (m->ownsShader) {
     baglDestroyShader(state, &m->shader);
+  }
+  if (m->ownsDiffuse) {
+    baglDestroyImage(state, &m->diffuseMap);
+  }
+  if (m->ownsSpecular) {
+    baglDestroyImage(state, &m->specularMap);
+  }
+  if (m->ownsNormal) {
+    baglDestroyImage(state, &m->normalMap);
   }
 
   state->reallocFn(m, 0);

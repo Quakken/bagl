@@ -37,12 +37,7 @@ int main() {
   BaglFrame* frame = baglCreateFrame(state, NULL);
 
   BaglMesh* mesh = baglLoadOBJ(state, "../assets/test.obj");
-
-  BaglMaterialConfig materialConfig = {
-      .vertexFilename = "../assets/normal.vert",
-      .fragmentFilename = "../assets/normal.frag",
-  };
-  BaglMaterial* material = baglCreateMaterial(state, &materialConfig);
+  BaglMaterial* material = baglLoadMTL(state, "../assets/test.mtl");
   BaglModel* model = baglCreateModel(state, mesh, material);
 
   BaglCamera* camera = baglCreateCamera(state, NULL);
