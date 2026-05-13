@@ -109,3 +109,17 @@ void baglDestroyMaterial(BaglState* state, BaglMaterial** material) {
   *material = NULL;
   baglLog(state, INFO, "Material destroyed");
 }
+
+void baglDestroyMaterials(BaglState* state,
+                          BaglMaterial*** materials,
+                          size_t numMaterials) {
+  if (!state || !materials || !(*materials)) {
+    return;
+  }
+  for (size_t i = 0; i < numMaterials; ++i) {
+    BaglMaterial* material = (*materials)[i];
+    baglDestroyMaterial(state, &material);
+  }
+  state->reallocFn(*materials, 0);
+  *materials = NULL;
+}

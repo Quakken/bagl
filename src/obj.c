@@ -8,6 +8,7 @@
 #include "bagl/mesh.h"
 #include "bagl/material.h"
 #include "bagl/model.h"
+#include "internal/bagl_material.h"
 #include "internal/bagl_mesh.h"
 #include "internal/bagl_model.h"
 #include "internal/bagl_state.h"
@@ -69,6 +70,8 @@ typedef struct BaglMTL {
   BaglImage* specularMap;
   BaglImage* normalMap;
   char* name;
+
+  struct BaglMTL* next;
 } BaglMTL;
 
 /* Callback to process a line of a file */
@@ -691,13 +694,14 @@ BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
   return mesh;
 }
 
-static void baglDestroyMTL(BaglState* state, BaglMTL* mtl) {
-  if (!state || !mtl) {
+static void baglDestroyMTLs(BaglState* state, BaglMTL* head) {
+  if (!state || !head) {
     return;
   }
-  baglDestroyImage(state, &mtl->diffuseMap);
-  baglDestroyImage(state, &mtl->specularMap);
-  baglDestroyImage(state, &mtl->normalMap);
+
+  BaglMTL* next = head->next;
+  state->reallocFn(head, 0);
+  baglDestroyMTLs(state, next);
 }
 
 static bool baglGetMTLColor(BaglState* state,
@@ -752,7 +756,11 @@ static bool baglProcessMTLLine(BaglState* state, char* line, void* data) {
   if (!state || !line || !data) {
     return false;
   }
-  BaglMTL* mtl = data;
+  BaglMTL** pMTL = data;
+  BaglMTL* mtl = *pMTL;
+  while (mtl && mtl->next) {
+    mtl = mtl->next;
+  }
 
   /* Tokenize the line */
   char* context = NULL;
@@ -764,7 +772,28 @@ static bool baglProcessMTLLine(BaglState* state, char* line, void* data) {
 
   /* New material */
   if (strcmp(token, "newmtl") == 0) {
-    /* TODO: Support multiple materials */
+    /* Allocate a new material */
+    BaglMTL* newMTL = state->reallocFn(NULL, sizeof(BaglMTL));
+    if (!newMTL) {
+      baglLog(state, ERROR, "Could not create new MTL (in baglProcessMTLLine");
+      return false;
+    }
+    memset(newMTL, 0, sizeof(BaglMTL));
+
+    /* Link material */
+    if (mtl) {
+      mtl->next = newMTL;
+    } else {
+      *pMTL = newMTL;
+    }
+    return true;
+  }
+
+  if (!mtl) {
+    baglLog(
+        state, WARNING,
+        "Adding attributes to an unspecified material (in baglProcessMTLLine)");
+    return false;
   }
 
   /* Colors */
@@ -811,27 +840,48 @@ static bool baglProcessMTLLine(BaglState* state, char* line, void* data) {
   return true;
 }
 
-BaglMaterial* baglLoadMTL(BaglState* state, const char* filename) {
-  BaglMTL mtl = {};
+size_t baglLoadMTL(BaglState* state,
+                   BaglMaterial*** materials,
+                   const char* filename) {
+  if (!state || !filename || !materials) {
+    return 0;
+  }
+
+  BaglMTL* mtl = NULL;
   /* Process all lines of the OBJ file */
   if (!baglParseLines(state, filename, baglProcessMTLLine, &mtl)) {
     baglLog(state, ERROR, "Error parsing mtl file (in baglLoadMTL)");
-    return NULL;
+    return 0;
   }
 
-  /* Create a material with the given properties */
-  BaglMaterialConfig config = {
-      .ambient = {mtl.ambient.r, mtl.ambient.g, mtl.ambient.b},
-      .specular = {mtl.specular.r, mtl.specular.b, mtl.specular.b},
-      .specularExponent = mtl.specularExponent,
-      .diffuseMap = mtl.diffuseMap,
-      .specularMap = mtl.specularMap,
-      .normalMap = mtl.normalMap,
-  };
-  BaglMaterial* material = baglCreateMaterial(state, &config);
+  /* Count number of materials loaded */
+  size_t numMaterials = 0;
+  BaglMTL* head = mtl;
+  while (mtl != NULL) {
+    ++numMaterials;
+    mtl = mtl->next;
+  }
 
-  baglDestroyMTL(state, &mtl);
-  return material;
+  /* Allocate output */
+  *materials = state->reallocFn(NULL, numMaterials * sizeof(BaglMaterial*));
+
+  mtl = head;
+  size_t currentMaterial = 0;
+  for (size_t i = 0; i < numMaterials; ++i) {
+    BaglMaterialConfig config = {
+        .ambient = {mtl->ambient.r, mtl->ambient.g, mtl->ambient.b},
+        .specular = {mtl->specular.r, mtl->specular.b, mtl->specular.b},
+        .specularExponent = mtl->specularExponent,
+        .diffuseMap = mtl->diffuseMap,
+        .specularMap = mtl->specularMap,
+        .normalMap = mtl->normalMap,
+    };
+    (*materials)[i] = baglCreateMaterial(state, &config);
+    mtl = mtl->next;
+  }
+
+  baglDestroyMTLs(state, head);
+  return numMaterials;
 }
 
 BaglModel* baglLoadModel(BaglState* state,
@@ -847,20 +897,23 @@ BaglModel* baglLoadModel(BaglState* state,
     baglLog(state, ERROR, "Could not load mesh from obj (in baglLoadModel)");
     return NULL;
   }
-  BaglMaterial* material = baglLoadMTL(state, mtlFilename);
-  if (!material) {
+  BaglMaterial** materials = NULL;
+  size_t numMaterials = baglLoadMTL(state, mtlFilename, &materials);
+  if (numMaterials < 1) {
     baglLog(state, ERROR,
-            "Could not load material from mtl (in baglLoadModel)");
+            "Could not load materials from mtl (in baglLoadModel)");
     baglDestroyMesh(state, &mesh);
     return NULL;
   }
 
   /* Create the model */
-  BaglModel* model = baglCreateModel(state, mesh, material);
+  BaglModel* model = baglCreateModel(state, mesh, materials[0]);
   if (!model) {
     baglLog(state, ERROR, "Could not create model (in baglLoadModel)");
     baglDestroyMesh(state, &mesh);
-    baglDestroyMaterial(state, &material);
+    for (size_t i = 0; i < numMaterials; ++i) {
+      baglDestroyMaterial(state, &materials[i]);
+    }
     return NULL;
   }
   model->ownsMaterial = true;

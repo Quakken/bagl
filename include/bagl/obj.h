@@ -21,12 +21,16 @@ typedef struct BaglModel BaglModel;
 BaglMesh* baglLoadOBJ(BaglState* state, const char* filename);
 
 /**
- * @brief Loads a material from an mtl file.
- * @param state State to load material with.
+ * @brief Loads materials from an mtl file.
+ * @param state State to load materials with.
+ * @param materials Pointer to the array of materials where output should be
+ * stored.
  * @param filename Name of the file to load.
- * @return Pointer to the material, or NULL if the material could not be loaded.
+ * @return Number of materials that were loaded.
  */
-BaglMaterial* baglLoadMTL(BaglState* state, const char* filename);
+size_t baglLoadMTL(BaglState* state,
+                   BaglMaterial*** materials,
+                   const char* filename);
 
 /**
  * @brief Loads a model from an obj/mtl file pair.

@@ -63,4 +63,14 @@ BaglMaterial* baglCreateMaterial(BaglState* state,
  */
 void baglDestroyMaterial(BaglState* state, BaglMaterial** material);
 
+/**
+ * @brief Destroys an array of materials.
+ * @param state State to destroy materials with.
+ * @param materials Materials to destroy.
+ * @param numMaterials Number of materials in the array.
+ */
+void baglDestroyMaterials(BaglState* state,
+                          BaglMaterial*** materials,
+                          size_t numMaterials);
+
 #endif
