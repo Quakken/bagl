@@ -579,6 +579,69 @@ static bool baglTriangulateFace(BaglState* state,
   return true;
 }
 
+/* Triangulates the faces of an object */
+static size_t baglTriangulateFaces(BaglState* state, BaglOBJ* obj) {
+  if (!state || !obj) {
+    return 0;
+  }
+
+  BaglOBJFace* newFace =
+      state->reallocFn(NULL, obj->numFaces * sizeof(BaglOBJFace));
+  size_t numElements = 0;
+  for (size_t i = 0; i < obj->numFaces; ++i) {
+    if (!baglTriangulateFace(state, obj, obj->faces + i, newFace + i)) {
+      baglLog(state, WARNING, "Triangulation failed (in baglLoadOBJ)");
+    }
+    numElements += newFace[i].numIndices;
+  }
+  state->reallocFn(obj->faces, 0);
+  obj->faces = newFace;
+
+  return numElements;
+}
+
+/* Generates vertex and element buffers from OBJ data */
+static void baglGenerateOBJBuffers(BaglState* state,
+                                   BaglOBJ* obj,
+                                   size_t numElements,
+                                   BaglVertex** vertices,
+                                   uint32_t** elements) {
+  if (!state || !obj || !vertices || !elements) {
+    return;
+  }
+
+  *vertices = state->reallocFn(NULL, sizeof(BaglVertex) * numElements);
+  *elements = state->reallocFn(NULL, sizeof(uint32_t) * numElements);
+
+  BaglVertex* vs = *vertices;
+  uint32_t* es = *elements;
+
+  /* Iterate over each face */
+  size_t currentElem = 0;
+  for (size_t i = 0; i < obj->numFaces; ++i) {
+    BaglOBJFace* face = obj->faces + i;
+    /* Iterate over each index */
+    BaglOBJIndices* indices = face->front;
+    do {
+      /* Add the vertex data to the vertex buffer */
+      vs[currentElem].position.x = obj->vertices[indices->vertexIdx].x;
+      vs[currentElem].position.y = obj->vertices[indices->vertexIdx].y;
+      vs[currentElem].position.z = obj->vertices[indices->vertexIdx].z;
+      vs[currentElem].normal.x = obj->normals[indices->normalIdx].x;
+      vs[currentElem].normal.y = obj->normals[indices->normalIdx].y;
+      vs[currentElem].normal.z = obj->normals[indices->normalIdx].z;
+      vs[currentElem].texCoords.u = obj->texCoords[indices->texCoordIdx].u;
+      vs[currentElem].texCoords.v = obj->texCoords[indices->texCoordIdx].v;
+
+      /* Add element to the element buffer */
+      es[currentElem] = currentElem;
+
+      ++currentElem;
+      indices = indices->next;
+    } while (indices != face->back->next);
+  }
+}
+
 BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
   BaglOBJ obj = {};
   /* Process all lines of the OBJ file */
@@ -588,48 +651,13 @@ BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
     return NULL;
   }
 
-  /* Turn OBJ data into a mesh */
   /* Triangulate faces */
-  BaglOBJFace* triangulated =
-      state->reallocFn(NULL, obj.numFaces * sizeof(BaglOBJFace));
-  size_t numElements = 0;
-  for (size_t i = 0; i < obj.numFaces; ++i) {
-    if (!baglTriangulateFace(state, &obj, obj.faces + i, triangulated + i)) {
-      baglLog(state, WARNING, "Triangulation failed (in baglLoadOBJ)");
-    }
-    numElements += triangulated[i].numIndices;
-  }
-  state->reallocFn(obj.faces, 0);
-  obj.faces = triangulated;
+  size_t numElements = baglTriangulateFaces(state, &obj);
 
-  /* Allocate buffers */
-  uint32_t* elements = state->reallocFn(NULL, sizeof(uint32_t) * numElements);
-  BaglVertex* vertices =
-      state->reallocFn(NULL, sizeof(BaglVertex) * numElements);
-
-  /* Iterate over each face */
-  size_t currentElem = 0;
-  for (size_t i = 0; i < obj.numFaces; ++i) {
-    BaglOBJFace* face = obj.faces + i;
-    /* Iterate over each index */
-    BaglOBJIndices* indices = face->front;
-    do { /* Add the vertex data to the vertex buffer */
-      vertices[currentElem].position.x = obj.vertices[indices->vertexIdx].x;
-      vertices[currentElem].position.y = obj.vertices[indices->vertexIdx].y;
-      vertices[currentElem].position.z = obj.vertices[indices->vertexIdx].z;
-      vertices[currentElem].normal.x = obj.normals[indices->normalIdx].x;
-      vertices[currentElem].normal.y = obj.normals[indices->normalIdx].y;
-      vertices[currentElem].normal.z = obj.normals[indices->normalIdx].z;
-      vertices[currentElem].texCoords.u = obj.texCoords[indices->texCoordIdx].u;
-      vertices[currentElem].texCoords.v = obj.texCoords[indices->texCoordIdx].v;
-
-      /* Add element to the element buffer */
-      elements[currentElem] = currentElem;
-
-      ++currentElem;
-      indices = indices->next;
-    } while (indices != face->back->next);
-  }
+  /* Generate buffers */
+  BaglVertex* vertices;
+  uint32_t* elements;
+  baglGenerateOBJBuffers(state, &obj, numElements, &vertices, &elements);
   baglDestroyOBJ(state, &obj);
 
   /* Create the mesh w/ vertices and elements */
