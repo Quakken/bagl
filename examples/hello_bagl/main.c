@@ -36,10 +36,11 @@ int main() {
 
   BaglFrame* frame = baglCreateFrame(state, NULL);
 
-  BaglMesh* mesh = baglLoadOBJ(state, "../assets/test.obj");
+  BaglMesh** meshes = NULL;
+  size_t numMeshes = baglLoadOBJ(state, &meshes, "../assets/test.obj");
   BaglMaterial** materials = NULL;
   size_t numMaterials = baglLoadMTL(state, &materials, "../assets/test.mtl");
-  BaglModel* model = baglCreateModel(state, mesh, materials[4]);
+  BaglModel* model = baglCreateModel(state, meshes[0], materials[4]);
 
   BaglCamera* camera = baglCreateCamera(state, NULL);
   baglSetCameraPosition(state, camera, 0, 0, 10);
@@ -82,7 +83,7 @@ int main() {
   baglDestroyCamera(state, &camera);
   baglDestroyModel(state, &model);
   baglDestroyMaterials(state, &materials, numMaterials);
-  baglDestroyMesh(state, &mesh);
+  baglDestroyMeshes(state, &meshes, numMeshes);
   baglDestroyFrame(state, &frame);
   baglDestroyState(&state);
   baglTerminate();

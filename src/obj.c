@@ -55,6 +55,8 @@ typedef struct BaglOBJ {
   size_t numFaces;
   size_t capFaces; /* Capacity of the faces array */
   BaglOBJFace* faces;
+
+  struct BaglOBJ* next;
 } BaglOBJ;
 
 /* Stores data for an MTL file */
@@ -214,10 +216,11 @@ static void baglDestroyOBJFace(BaglState* state, BaglOBJFace* face) {
   face->numIndices = 0;
 }
 
-static void baglDestroyOBJ(BaglState* state, BaglOBJ* obj) {
-  if (!obj) {
+static void baglDestroyOBJs(BaglState* state, BaglOBJ* obj) {
+  if (!state || !obj) {
     return;
   }
+  BaglOBJ* next = obj->next;
   state->reallocFn(obj->vertices, 0);
   state->reallocFn(obj->texCoords, 0);
   state->reallocFn(obj->normals, 0);
@@ -225,6 +228,8 @@ static void baglDestroyOBJ(BaglState* state, BaglOBJ* obj) {
     baglDestroyOBJFace(state, obj->faces + i);
   }
   state->reallocFn(obj->faces, 0);
+  state->reallocFn(obj, 0);
+  baglDestroyOBJs(state, next);
 }
 
 static bool baglProcessOBJVertex(BaglState* state,
@@ -454,7 +459,11 @@ static bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
   if (!state || !line || !data) {
     return false;
   }
-  BaglOBJ* obj = data;
+  BaglOBJ** pOBJ = data;
+  BaglOBJ* obj = *pOBJ;
+  while (obj && obj->next) {
+    obj = obj->next;
+  }
 
   /* Tokenize the line */
   char* context = NULL;
@@ -464,33 +473,60 @@ static bool baglProcessOBJLine(BaglState* state, char* line, void* data) {
     return true;
   }
 
+  /* New object */
+  if (strcmp(token, "o") == 0) {
+    /* Allocate the new OBJ */
+    BaglOBJ* newOBJ = state->reallocFn(NULL, sizeof(BaglOBJ));
+    if (!newOBJ) {
+      baglLog(state, ERROR, "Could not allocate OBJ (in baglProcessOBJLine)");
+      return false;
+    }
+    memset(newOBJ, 0, sizeof(BaglOBJ));
+
+    /* Link it to the list */
+    if (obj) {
+      obj->next = newOBJ;
+    } else {
+      *pOBJ = newOBJ;
+    }
+    return true;
+  }
+
   /* Vertex entry */
-  if (strcmp(token, "v") == 0) {
-    if (!baglProcessOBJVertex(state, token, context, obj)) {
-      baglLog(state, ERROR, "Could not process vertex (in baglProcessOBJLine)");
-      return false;
+  if (obj) {
+    if (strcmp(token, "v") == 0) {
+      if (!obj) {
+        baglLog(state, ERROR, "No object specified (in baglProcessOBJLine)");
+      }
+
+      if (!baglProcessOBJVertex(state, token, context, obj)) {
+        baglLog(state, ERROR,
+                "Could not process vertex (in baglProcessOBJLine)");
+        return false;
+      }
     }
-  }
-  /* Texture coordinates */
-  else if (strcmp(token, "vt") == 0) {
-    if (!baglProcessOBJTexCoord(state, token, context, obj)) {
-      baglLog(state, ERROR,
-              "Could not process texture coordinate (in baglProcessOBJLine)");
-      return false;
+    /* Texture coordinates */
+    else if (strcmp(token, "vt") == 0) {
+      if (!baglProcessOBJTexCoord(state, token, context, obj)) {
+        baglLog(state, ERROR,
+                "Could not process texture coordinate (in baglProcessOBJLine)");
+        return false;
+      }
     }
-  }
-  /* Normals */
-  else if (strcmp(token, "vn") == 0) {
-    if (!baglProcessOBJNormal(state, token, context, obj)) {
-      baglLog(state, ERROR, "Could not process normal (in baglProcessOBJLine)");
-      return false;
+    /* Normals */
+    else if (strcmp(token, "vn") == 0) {
+      if (!baglProcessOBJNormal(state, token, context, obj)) {
+        baglLog(state, ERROR,
+                "Could not process normal (in baglProcessOBJLine)");
+        return false;
+      }
     }
-  }
-  /* Faces */
-  else if (strcmp(token, "f") == 0) {
-    if (!baglProcessOBJFace(state, token, context, obj)) {
-      baglLog(state, ERROR, "Could not process face (in baglProcessOBJLine)");
-      return false;
+    /* Faces */
+    else if (strcmp(token, "f") == 0) {
+      if (!baglProcessOBJFace(state, token, context, obj)) {
+        baglLog(state, ERROR, "Could not process face (in baglProcessOBJLine)");
+        return false;
+      }
     }
   }
 
@@ -657,41 +693,56 @@ static void baglGenerateOBJBuffers(BaglState* state,
   }
 }
 
-BaglMesh* baglLoadOBJ(BaglState* state, const char* filename) {
-  BaglOBJ obj = {};
+size_t baglLoadOBJ(BaglState* state, BaglMesh*** meshes, const char* filename) {
+  BaglOBJ* obj = NULL;
   /* Process all lines of the OBJ file */
   if (!baglParseLines(state, filename, baglProcessOBJLine, &obj)) {
     baglLog(state, ERROR, "Error parsing obj file (in baglLoadOBJ)");
-    baglDestroyOBJ(state, &obj);
-    return NULL;
+    baglDestroyOBJs(state, obj);
+    return 0;
   }
 
-  /* Triangulate faces */
-  size_t numElements = baglTriangulateFaces(state, &obj);
-
-  /* Generate buffers */
-  BaglVertex* vertices;
-  uint32_t* elements;
-  baglGenerateOBJBuffers(state, &obj, numElements, &vertices, &elements);
-  baglDestroyOBJ(state, &obj);
-
-  /* Create the mesh w/ vertices and elements */
-  BaglMeshConfig config = {
-      .numVertices = numElements,
-      .vertices = vertices,
-      .numIndices = numElements,
-      .indices = elements,
-  };
-  BaglMesh* mesh = baglCreateMesh(state, &config);
-  state->reallocFn(vertices, 0);
-  state->reallocFn(elements, 0);
-
-  if (!mesh) {
-    baglLog(state, ERROR, "Could not load mesh (in baglLoadOBJ)");
-    return NULL;
+  BaglOBJ* head = obj;
+  size_t numMeshes = 0;
+  while (obj != NULL) {
+    ++numMeshes;
+    obj = obj->next;
   }
 
-  return mesh;
+  /* Allocate the meshes array */
+  *meshes = state->reallocFn(NULL, sizeof(BaglMesh*) * numMeshes);
+  if (!meshes) {
+    baglLog(state, ERROR, "Could not allocate mesh array (in baglLoadOBJ)");
+    baglDestroyOBJs(state, head);
+    return 0;
+  }
+
+  obj = head;
+  for (size_t i = 0; i < numMeshes; ++i) {
+    /* Triangulate faces */
+    size_t numElements = baglTriangulateFaces(state, obj);
+
+    /* Generate buffers */
+    BaglVertex* vertices;
+    uint32_t* elements;
+    baglGenerateOBJBuffers(state, obj, numElements, &vertices, &elements);
+
+    /* Create the mesh w/ vertices and elements */
+    BaglMeshConfig config = {
+        .numVertices = numElements,
+        .vertices = vertices,
+        .numIndices = numElements,
+        .indices = elements,
+    };
+    (*meshes)[i] = baglCreateMesh(state, &config);
+    state->reallocFn(vertices, 0);
+    state->reallocFn(elements, 0);
+
+    obj = obj->next;
+  }
+  baglDestroyOBJs(state, head);
+
+  return numMeshes;
 }
 
 static void baglDestroyMTLs(BaglState* state, BaglMTL* head) {
@@ -864,6 +915,11 @@ size_t baglLoadMTL(BaglState* state,
 
   /* Allocate output */
   *materials = state->reallocFn(NULL, numMaterials * sizeof(BaglMaterial*));
+  if (!materials) {
+    baglLog(state, ERROR, "Could not allocate material array (in baglLoadMTL)");
+    baglDestroyMTLs(state, head);
+    return 0;
+  }
 
   mtl = head;
   size_t currentMaterial = 0;
@@ -892,28 +948,27 @@ BaglModel* baglLoadModel(BaglState* state,
   }
 
   /* Load model components */
-  BaglMesh* mesh = baglLoadOBJ(state, objFilename);
-  if (!mesh) {
+  BaglMesh** meshes = NULL;
+  size_t numMeshes = baglLoadOBJ(state, &meshes, objFilename);
+  if (!meshes) {
     baglLog(state, ERROR, "Could not load mesh from obj (in baglLoadModel)");
     return NULL;
   }
   BaglMaterial** materials = NULL;
-  size_t numMaterials = baglLoadMTL(state, mtlFilename, &materials);
+  size_t numMaterials = baglLoadMTL(state, &materials, mtlFilename);
   if (numMaterials < 1) {
     baglLog(state, ERROR,
             "Could not load materials from mtl (in baglLoadModel)");
-    baglDestroyMesh(state, &mesh);
+    baglDestroyMesh(state, &meshes[0]);
     return NULL;
   }
 
   /* Create the model */
-  BaglModel* model = baglCreateModel(state, mesh, materials[0]);
+  BaglModel* model = baglCreateModel(state, meshes[0], materials[0]);
   if (!model) {
     baglLog(state, ERROR, "Could not create model (in baglLoadModel)");
-    baglDestroyMesh(state, &mesh);
-    for (size_t i = 0; i < numMaterials; ++i) {
-      baglDestroyMaterial(state, &materials[i]);
-    }
+    baglDestroyMesh(state, &meshes[0]);
+    baglDestroyMaterials(state, &materials, numMaterials);
     return NULL;
   }
   model->ownsMaterial = true;

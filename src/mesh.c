@@ -76,6 +76,18 @@ void baglDestroyMesh(BaglState* state, BaglMesh** mesh) {
   baglLog(state, INFO, "Mesh destroyed");
 }
 
+void baglDestroyMeshes(BaglState* state, BaglMesh*** meshes, size_t numMeshes) {
+  if (!state || !meshes || !(*meshes)) {
+    return;
+  }
+  for (size_t i = 0; i < numMeshes; ++i) {
+    BaglMesh* mesh = (*meshes)[i];
+    baglDestroyMesh(state, &mesh);
+  }
+  state->reallocFn(*meshes, 0);
+  *meshes = NULL;
+}
+
 static bool baglValidateMeshConfig(BaglState* state,
                                    const BaglMeshConfig* config) {
   if (!config) {

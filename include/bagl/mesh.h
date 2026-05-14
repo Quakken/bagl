@@ -57,4 +57,12 @@ BaglMesh* baglCreateMesh(BaglState* state, const BaglMeshConfig* config);
  */
 void baglDestroyMesh(BaglState* state, BaglMesh** mesh);
 
+/**
+ * @brief Destroys an array of meshes.
+ * @param state State to destroy mesh with.
+ * @param mesh Meshes to destroy.
+ * @param numMeshes Number of meshes in the array.
+ */
+void baglDestroyMeshes(BaglState* state, BaglMesh*** meshes, size_t numMeshes);
+
 #endif
