@@ -14,6 +14,7 @@ typedef struct BaglMesh {
   GLuint ebo;
   GLuint vao;
   unsigned int numIndices;
+  unsigned int materialIdx; /* used by BaglModel */
 } BaglMesh;
 
 #endif

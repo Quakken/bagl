@@ -201,6 +201,49 @@ void baglProcessFrame(BaglState* state,
   glBindVertexArray(0);
 }
 
+void baglDrawModelMesh(BaglState* state,
+                       BaglFrame* frame,
+                       BaglModel* model,
+                       BaglMesh* mesh,
+                       BaglMaterial* material,
+                       BaglCamera* camera) {
+  /* TODO: Stencil tests */
+  glUseProgram(material->shader->program);
+  /* Bind all material data */
+  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING, material->ubo);
+  if (material->diffuseMap) {
+    glActiveTexture(GL_TEXTURE0 + BAGL_DIFFUSE_TEXTURE_UNIT);
+    glBindTexture(GL_TEXTURE_2D, material->diffuseMap->texture);
+  }
+  if (material->specularMap) {
+    glActiveTexture(GL_TEXTURE0 + BAGL_SPECULAR_TEXTURE_UNIT);
+    glBindTexture(GL_TEXTURE_2D, material->specularMap->texture);
+  }
+  if (material->normalMap) {
+    glActiveTexture(GL_TEXTURE0 + BAGL_NORMAL_TEXTURE_UNIT);
+    glBindTexture(GL_TEXTURE_2D, material->normalMap->texture);
+  }
+  /* Update and bind camera matrices */
+  if (camera->isViewDirty) {
+    baglUpdateCameraMatrices(state, camera);
+  }
+  glBindBuffer(GL_UNIFORM_BUFFER, camera->ubo);
+  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATRIX_BINDING, camera->ubo);
+
+  /* Bind model matrix */
+  if (model->isTransformDirty) {
+    baglGenTransform(&model->transform[0], &model->transformConfig);
+    model->isTransformDirty = false;
+  }
+  glUniformMatrix4fv(
+      glGetUniformLocation(material->shader->program, BAGL_MODEL_UNIFORM_NAME),
+      1, false, &model->transform[0]);
+
+  /* Draw the model */
+  glBindVertexArray(mesh->vao);
+  glDrawElements(GL_TRIANGLES, mesh->numIndices, GL_UNSIGNED_INT, NULL);
+}
+
 void baglDraw(BaglState* state,
               BaglFrame* frame,
               BaglModel* model,
@@ -222,43 +265,14 @@ void baglDraw(BaglState* state,
     glViewport(0, 0, frame->depthStencilAttachment->width,
                frame->depthStencilAttachment->height);
   }
-  /* TODO: Stencil tests */
-  glUseProgram(model->material->shader->program);
-  /* Bind all material data */
-  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING,
-                   model->material->ubo);
-  if (model->material->diffuseMap) {
-    glActiveTexture(GL_TEXTURE0 + BAGL_DIFFUSE_TEXTURE_UNIT);
-    glBindTexture(GL_TEXTURE_2D, model->material->diffuseMap->texture);
-  }
-  if (model->material->specularMap) {
-    glActiveTexture(GL_TEXTURE0 + BAGL_SPECULAR_TEXTURE_UNIT);
-    glBindTexture(GL_TEXTURE_2D, model->material->specularMap->texture);
-  }
-  if (model->material->normalMap) {
-    glActiveTexture(GL_TEXTURE0 + BAGL_NORMAL_TEXTURE_UNIT);
-    glBindTexture(GL_TEXTURE_2D, model->material->normalMap->texture);
-  }
-  /* Update and bind camera matrices */
-  if (camera->isViewDirty) {
-    baglUpdateCameraMatrices(state, camera);
-  }
-  glBindBuffer(GL_UNIFORM_BUFFER, camera->ubo);
-  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATRIX_BINDING, camera->ubo);
 
-  /* Bind model matrix */
-  if (model->isTransformDirty) {
-    baglGenTransform(&model->transform[0], &model->transformConfig);
-    model->isTransformDirty = false;
-  }
-  glUniformMatrix4fv(glGetUniformLocation(model->material->shader->program,
-                                          BAGL_MODEL_UNIFORM_NAME),
-                     1, false, &model->transform[0]);
-
-  /* Draw the model */
+  /* Draw the meshes */
   glBindFramebuffer(GL_FRAMEBUFFER, frame->fbo);
-  glBindVertexArray(model->mesh->vao);
-  glDrawElements(GL_TRIANGLES, model->mesh->numIndices, GL_UNSIGNED_INT, NULL);
+  for (size_t i = 0; i < model->numMeshes; ++i) {
+    BaglMesh* mesh = model->meshes[i];
+    BaglMaterial* material = model->materials[mesh->materialIdx];
+    baglDrawModelMesh(state, frame, model, mesh, material, camera);
+  }
   glBindVertexArray(0);
 
   /* Resize the viewport */

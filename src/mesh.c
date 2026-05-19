@@ -28,6 +28,7 @@ BaglMesh* baglCreateMesh(BaglState* state, const BaglMeshConfig* config) {
     return NULL;
   }
   mesh->numIndices = config->numIndices;
+  mesh->materialIdx = 0;
 
   /* Make the VAO */
   glGenVertexArrays(1, &mesh->vao);

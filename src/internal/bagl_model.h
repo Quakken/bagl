@@ -14,13 +14,18 @@ typedef struct BaglMesh BaglMesh;
 typedef struct BaglMaterial BaglMaterial;
 
 typedef struct BaglModel {
-  BaglMesh* mesh;
-  BaglMaterial* material;
+  BaglMesh** meshes;
+  BaglMaterial** materials;
   BaglTransformConfig transformConfig;
   float transform[16];
 
-  bool ownsMesh;
-  bool ownsMaterial;
+  size_t numMeshes;
+  size_t capMeshes;
+  size_t numMaterials;
+  size_t capMaterials;
+
+  bool ownsMeshes;
+  bool ownsMaterials;
   bool isTransformDirty;
 } BaglModel;
 
