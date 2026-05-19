@@ -37,6 +37,7 @@ cmake --build build --config Release
 - [glfw](https://www.glfw.org/) - Window/input management
 - [glad](https://glad.dav1d.de/) - OpenGL function loader
 - [stb_image](https://github.com/nothings/stb/) - Image loader
+- [assimp](https://github.com/assimp/assimp) - Model loader
 
 ---
 

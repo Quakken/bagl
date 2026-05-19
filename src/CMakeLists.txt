@@ -62,9 +62,20 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glfw)
 add_library(bagl::glfw ALIAS glfw)
 
+# Fetch Assimp
+FetchContent_Declare(
+  assimp
+  GIT_REPOSITORY https://github.com/assimp/assimp
+  GIT_TAG v6.0.5
+)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(assimp)
+
 # Link against dependencies
 target_link_libraries(bagl
   PRIVATE
+    assimp::assimp
     bagl::glfw
     bagl::glad
     bagl::stb_image
