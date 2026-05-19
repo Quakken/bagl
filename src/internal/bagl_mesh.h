@@ -7,6 +7,7 @@
 #ifndef BAGL_BAGL_MESH_H
 #define BAGL_BAGL_MESH_H
 
+typedef struct BaglMaterial BaglMaterial;
 typedef unsigned int GLuint;
 
 typedef struct BaglMesh {
@@ -14,7 +15,7 @@ typedef struct BaglMesh {
   GLuint ebo;
   GLuint vao;
   unsigned int numIndices;
-  unsigned int materialIdx; /* used by BaglModel */
+  BaglMaterial* material; /* used by BaglModel */
 } BaglMesh;
 
 #endif

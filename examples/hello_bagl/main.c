@@ -92,6 +92,8 @@ int main() {
   BaglMaterial* material = baglCreateMaterial(state, &materialConfig);
   BaglModel* model = baglCreateModel(state, mesh, material);
 
+  BaglModel* suzanne = baglLoadModel(state, "../assets/suzanne.obj");
+
   BaglCamera* camera = baglCreateCamera(state, NULL);
   baglSetCameraPosition(state, camera, 0, 0, 10);
 
@@ -118,18 +120,19 @@ int main() {
     ticks += 0.025f;
 
     /* Rotate the box around the x axis and change scale */
-    baglSetModelScale(state, model, 1.0f + fabsf(c), 1.0f + fabsf(c),
+    baglSetModelScale(state, suzanne, 1.0f + fabsf(c), 1.0f + fabsf(c),
                       1.0f + fabsf(c));
-    baglSetModelRotation(state, model, c * 180.0f, 0, 0);
-    baglSetModelPosition(state, model, 0, s, 0);
+    baglSetModelRotation(state, suzanne, c * 180.0f, 0, 0);
+    baglSetModelPosition(state, suzanne, 0, s, 0);
 
     /* Draw the model */
-    baglDraw(state, frame, model, camera);
+    baglDraw(state, frame, suzanne, camera);
     baglPresent(state, frame, NULL);
     baglPollEvents();
   }
 
   /* Cleanup */
+  baglDestroyModel(state, &suzanne);
   baglDestroyCamera(state, &camera);
   baglDestroyImage(state, &image);
   baglDestroyModel(state, &model);

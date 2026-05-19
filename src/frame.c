@@ -270,8 +270,7 @@ void baglDraw(BaglState* state,
   glBindFramebuffer(GL_FRAMEBUFFER, frame->fbo);
   for (size_t i = 0; i < model->numMeshes; ++i) {
     BaglMesh* mesh = model->meshes[i];
-    BaglMaterial* material = model->materials[mesh->materialIdx];
-    baglDrawModelMesh(state, frame, model, mesh, material, camera);
+    baglDrawModelMesh(state, frame, model, mesh, mesh->material, camera);
   }
   glBindVertexArray(0);
 

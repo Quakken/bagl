@@ -22,7 +22,6 @@ typedef struct BaglModel {
   size_t numMeshes;
   size_t capMeshes;
   size_t numMaterials;
-  size_t capMaterials;
 
   bool ownsMeshes;
   bool ownsMaterials;
