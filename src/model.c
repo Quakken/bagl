@@ -8,7 +8,9 @@
 #include <assimp/postprocess.h>
 
 #include "assimp/importerdesc.h"
+#include "assimp/material.h"
 #include "assimp/scene.h"
+#include "bagl/image.h"
 #include "bagl/mesh.h"
 #include "bagl/material.h"
 
@@ -17,6 +19,8 @@
 #include "internal/bagl_mesh.h"
 #include "internal/bagl_material.h"
 #include "internal/utils.h"
+
+const static size_t BAGL_MAX_TEX_PATH_LEN = 128;
 
 BaglModel* baglCreateModel(BaglState* state,
                            BaglMesh* mesh,
@@ -72,7 +76,7 @@ BaglModel* baglCreateModel(BaglState* state,
   return model;
 }
 
-bool baglPushMesh(BaglState* state, BaglModel* model, BaglMesh* mesh) {
+static bool baglPushMesh(BaglState* state, BaglModel* model, BaglMesh* mesh) {
   if (!state || !model || !mesh) {
     return false;
   }
@@ -95,10 +99,10 @@ bool baglPushMesh(BaglState* state, BaglModel* model, BaglMesh* mesh) {
   return true;
 }
 
-bool baglLoadModelMesh(BaglState* state,
-                       BaglModel* model,
-                       const struct aiScene* scene,
-                       const struct aiMesh* mesh) {
+static bool baglLoadModelMesh(BaglState* state,
+                              BaglModel* model,
+                              const struct aiScene* scene,
+                              const struct aiMesh* mesh) {
   if (!state || !model || !scene || !mesh) {
     return false;
   }
@@ -139,7 +143,7 @@ bool baglLoadModelMesh(BaglState* state,
     }
     if (mesh->mTextureCoords[0]) {
       vtx.texCoords.u = mesh->mTextureCoords[0][i].x;
-      vtx.texCoords.v = mesh->mTextureCoords[0][i].x;
+      vtx.texCoords.v = mesh->mTextureCoords[0][i].y;
     }
     vertices[i] = vtx;
   }
@@ -172,18 +176,21 @@ bool baglLoadModelMesh(BaglState* state,
   }
 
   /* Link material */
-  /* TODO */
-  baglMesh->material = model->materials[0];
+  if (mesh->mMaterialIndex >= 0) {
+    baglMesh->material = model->materials[mesh->mMaterialIndex];
+  } else {
+    baglMesh->material = NULL;
+  }
 
   baglPushMesh(state, model, baglMesh);
 
   return true;
 }
 
-bool baglLoadModelNode(BaglState* state,
-                       BaglModel* model,
-                       const struct aiScene* scene,
-                       struct aiNode* node) {
+static bool baglLoadModelNode(BaglState* state,
+                              BaglModel* model,
+                              const struct aiScene* scene,
+                              struct aiNode* node) {
   if (!state || !model || !scene || !node) {
     return false;
   }
@@ -205,14 +212,105 @@ bool baglLoadModelNode(BaglState* state,
   return true;
 }
 
+static size_t baglGetLastDirOffs(const char* path) {
+  size_t len = strlen(path);
+  for (size_t i = len - 1; i > 0; --i) {
+    if (path[i] == '/' || path[i] == '\\') {
+      return i;
+    }
+  }
+  return len;
+}
+
+static void baglResetPathRoot(char* root, size_t lastDirOffs) {
+  if (!root) {
+    return;
+  }
+  memset(root + lastDirOffs + 1, 0, BAGL_MAX_TEX_PATH_LEN - 1);
+}
+
+static char* baglGetPathRoot(BaglState* state,
+                             const char* path,
+                             size_t lastDirOffs) {
+  if (!state || !path) {
+    return NULL;
+  }
+  /* Use directory offset to get just the "root" part of a file */
+  const size_t bufferLen = lastDirOffs + BAGL_MAX_TEX_PATH_LEN;
+  char* modelRoot = state->reallocFn(NULL, bufferLen);
+  if (!modelRoot) {
+    baglLog(state, ERROR, "Could not allocate path (in baglGetPathRoot)");
+    return NULL;
+  }
+  /* Copy root directory to the path */
+  memcpy(modelRoot, path, lastDirOffs + 1);
+  /* Zero out the rest of the path */
+  baglResetPathRoot(modelRoot, lastDirOffs);
+  return modelRoot;
+}
+
+static void baglAppendPathRoot(char* root,
+                               const char* path,
+                               size_t lastDirOffs) {
+  if (!root) {
+    return;
+  }
+  strcat_s(root, lastDirOffs + BAGL_MAX_TEX_PATH_LEN, path);
+}
+
+static void baglLoadMaterials(BaglState* state,
+                              BaglModel* model,
+                              const char* filename,
+                              const struct aiScene* scene) {
+  /* Calculate the model's directory */
+  size_t lastDirOffs = baglGetLastDirOffs(filename);
+  char* root = baglGetPathRoot(state, filename, lastDirOffs);
+
+  /* Load materials */
+  for (size_t i = 0; i < model->numMaterials; ++i) {
+    struct aiMaterial* material = scene->mMaterials[i];
+    /* TODO: Support multiple diffuse/spec textures per material */
+    size_t numDiffuse =
+        aiGetMaterialTextureCount(material, aiTextureType_DIFFUSE);
+    size_t numSpec =
+        aiGetMaterialTextureCount(material, aiTextureType_SPECULAR);
+
+    BaglMaterialConfig config = {};
+
+    if (numDiffuse > 0) {
+      struct aiString diffusePath = {};
+      aiGetMaterialTexture(material, aiTextureType_DIFFUSE, 0, &diffusePath,
+                           NULL, NULL, NULL, NULL, NULL, NULL);
+      /* TODO: Fix this (memory leak) */
+      baglAppendPathRoot(root, diffusePath.data, lastDirOffs);
+      config.diffuseMap = baglLoadImage(state, root);
+      baglResetPathRoot(root, lastDirOffs);
+    }
+    if (numSpec > 0) {
+      struct aiString specPath = {};
+      aiGetMaterialTexture(material, aiTextureType_SPECULAR, 0, &specPath, NULL,
+                           NULL, NULL, NULL, NULL, NULL);
+      /* TODO: Fix this (memory leak) */
+      baglAppendPathRoot(root, specPath.data, lastDirOffs);
+      config.specularMap = baglLoadImage(state, root);
+      baglResetPathRoot(root, lastDirOffs);
+    }
+    config.specularExponent = 1;
+
+    model->materials[i] = baglCreateMaterial(state, &config);
+  }
+
+  /* Release path root */
+  state->reallocFn(root, 0);
+}
+
 BaglModel* baglLoadModel(BaglState* state, const char* filename) {
   if (!state || !filename) {
     return NULL;
   }
 
   /* Load the scene from file */
-  enum aiImporterFlags flags = aiProcess_Triangulate | aiProcess_FlipUVs;
-  const struct aiScene* scene = aiImportFile(filename, flags);
+  const struct aiScene* scene = aiImportFile(filename, aiProcess_Triangulate);
   if (scene == NULL || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !scene->mRootNode) {
     baglLog(state, ERROR, aiGetErrorString());
@@ -227,6 +325,7 @@ BaglModel* baglLoadModel(BaglState* state, const char* filename) {
     aiReleaseImport(scene);
     return NULL;
   }
+
   /* Allocate materials */
   model->materials =
       state->reallocFn(NULL, sizeof(BaglMaterial*) * scene->mNumMaterials);
@@ -234,7 +333,10 @@ BaglModel* baglLoadModel(BaglState* state, const char* filename) {
     baglLog(state, ERROR, "Could not allocate materials (in baglLoadModel)");
     state->reallocFn(model, 0);
     aiReleaseImport(scene);
+    return NULL;
   }
+  model->numMaterials = scene->mNumMaterials;
+
   /* Allocate meshes */
   model->meshes = state->reallocFn(NULL, sizeof(BaglModel*));
   if (!model->meshes) {
@@ -242,22 +344,26 @@ BaglModel* baglLoadModel(BaglState* state, const char* filename) {
     state->reallocFn(model->materials, 0);
     state->reallocFn(model, 0);
     aiReleaseImport(scene);
+    return NULL;
   }
   model->numMeshes = 0;
   model->capMeshes = 1;
 
+  /* Assign members */
   model->ownsMeshes = true;
   model->ownsMaterials = true;
   memset(&model->transformConfig, 0, sizeof(model->transformConfig));
   model->isTransformDirty = true;
 
-  /* Load materials */
-  /* TODO */
-  model->materials[0] = baglCreateMaterial(state, NULL);
-  model->numMaterials = 1;
+  /* Load material data */
+  baglLoadMaterials(state, model, filename, scene);
 
   /* Process each node of the scene */
-  baglLoadModelNode(state, model, scene, scene->mRootNode);
+  bool result = baglLoadModelNode(state, model, scene, scene->mRootNode);
+  if (!result) {
+    baglLog(state, ERROR,
+            "Error occurred when loading model (in baglLoadModel)");
+  }
 
   aiReleaseImport(scene);
   return model;

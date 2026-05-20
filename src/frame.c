@@ -201,12 +201,15 @@ void baglProcessFrame(BaglState* state,
   glBindVertexArray(0);
 }
 
-void baglDrawModelMesh(BaglState* state,
-                       BaglFrame* frame,
-                       BaglModel* model,
-                       BaglMesh* mesh,
-                       BaglMaterial* material,
-                       BaglCamera* camera) {
+static void baglDrawModelMesh(BaglState* state,
+                              BaglFrame* frame,
+                              BaglModel* model,
+                              BaglMesh* mesh,
+                              BaglMaterial* material,
+                              BaglCamera* camera) {
+  if (!state || !frame || !model || !mesh || !material || !camera) {
+    return;
+  }
   /* TODO: Stencil tests */
   glUseProgram(material->shader->program);
   /* Bind all material data */
