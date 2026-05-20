@@ -24,16 +24,29 @@ typedef struct BaglMaterialLayout {
   float padding0;
   struct {
     float r, g, b;
+  } diffuse;
+  float padding1;
+  struct {
+    float r, g, b;
   } specular;
   float specularExponent;
 } BaglMaterialLayout;
 
 typedef struct BaglMaterial {
-  BaglImage* diffuseMap;
-  BaglImage* specularMap;
-  BaglImage* normalMap;
+  BaglImage** ambientMaps;
+  BaglImage** diffuseMaps;
+  BaglImage** specularMaps;
+  BaglImage** normalMaps;
   BaglShader* shader;
+  size_t numAmbientMaps;
+  size_t numDiffuseMaps;
+  size_t numSpecularMaps;
+  size_t numNormalMaps;
   GLuint ubo;
+  bool ownsAmbientMaps;
+  bool ownsDiffuseMaps;
+  bool ownsSpecularMaps;
+  bool ownsNormalMaps;
   bool ownsShader;
 } BaglMaterial;
 

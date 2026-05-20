@@ -269,35 +269,102 @@ static void baglLoadMaterials(BaglState* state,
   /* Load materials */
   for (size_t i = 0; i < model->numMaterials; ++i) {
     struct aiMaterial* material = scene->mMaterials[i];
-    /* TODO: Support multiple diffuse/spec textures per material */
+    size_t numAmbient =
+        aiGetMaterialTextureCount(material, aiTextureType_AMBIENT);
     size_t numDiffuse =
         aiGetMaterialTextureCount(material, aiTextureType_DIFFUSE);
     size_t numSpec =
         aiGetMaterialTextureCount(material, aiTextureType_SPECULAR);
+    size_t numNormal =
+        aiGetMaterialTextureCount(material, aiTextureType_NORMALS);
 
     BaglMaterialConfig config = {};
+    config.ambientMaps =
+        (numAmbient) ? state->reallocFn(NULL, numAmbient * sizeof(BaglImage*))
+                     : NULL;
+    config.diffuseMaps =
+        (numDiffuse) ? state->reallocFn(NULL, numDiffuse * sizeof(BaglImage*))
+                     : NULL;
+    config.specularMaps =
+        (numSpec) ? state->reallocFn(NULL, numSpec * sizeof(BaglImage*)) : NULL;
+    config.normalMaps =
+        (numNormal) ? state->reallocFn(NULL, numNormal * sizeof(BaglImage*))
+                    : NULL;
+    // TODO: null check
+    config.numAmbientMaps = numAmbient;
+    config.numDiffuseMaps = numDiffuse;
+    config.numSpecularMaps = numSpec;
+    config.numNormalMaps = numNormal;
 
-    if (numDiffuse > 0) {
-      struct aiString diffusePath = {};
-      aiGetMaterialTexture(material, aiTextureType_DIFFUSE, 0, &diffusePath,
+    for (size_t j = 0; j < numAmbient; ++j) {
+      struct aiString ambientPath = {};
+      aiGetMaterialTexture(material, aiTextureType_DIFFUSE, j, &ambientPath,
                            NULL, NULL, NULL, NULL, NULL, NULL);
-      /* TODO: Fix this (memory leak) */
+      baglAppendPathRoot(root, ambientPath.data, lastDirOffs);
+      config.ambientMaps[j] = baglLoadImage(state, root);
+      baglResetPathRoot(root, lastDirOffs);
+    }
+    for (size_t j = 0; j < numDiffuse; ++j) {
+      struct aiString diffusePath = {};
+      aiGetMaterialTexture(material, aiTextureType_DIFFUSE, j, &diffusePath,
+                           NULL, NULL, NULL, NULL, NULL, NULL);
       baglAppendPathRoot(root, diffusePath.data, lastDirOffs);
-      config.diffuseMap = baglLoadImage(state, root);
+      config.diffuseMaps[j] = baglLoadImage(state, root);
       baglResetPathRoot(root, lastDirOffs);
     }
-    if (numSpec > 0) {
+    for (size_t j = 0; j < numSpec; ++j) {
       struct aiString specPath = {};
-      aiGetMaterialTexture(material, aiTextureType_SPECULAR, 0, &specPath, NULL,
+      aiGetMaterialTexture(material, aiTextureType_SPECULAR, j, &specPath, NULL,
                            NULL, NULL, NULL, NULL, NULL);
-      /* TODO: Fix this (memory leak) */
       baglAppendPathRoot(root, specPath.data, lastDirOffs);
-      config.specularMap = baglLoadImage(state, root);
+      config.specularMaps[j] = baglLoadImage(state, root);
       baglResetPathRoot(root, lastDirOffs);
     }
+    for (size_t j = 0; j < numNormal; ++j) {
+      struct aiString normPath = {};
+      aiGetMaterialTexture(material, aiTextureType_NORMALS, j, &normPath, NULL,
+                           NULL, NULL, NULL, NULL, NULL);
+      baglAppendPathRoot(root, normPath.data, lastDirOffs);
+      config.normalMaps[j] = baglLoadImage(state, root);
+      baglResetPathRoot(root, lastDirOffs);
+    }
+    // TODO: Read this from material
     config.specularExponent = 1;
+    // TODO: Ambient, diffuse, specular colors
 
     model->materials[i] = baglCreateMaterial(state, &config);
+    /* Free configuration and transfer ownership to material */
+    if (model->materials[i]) {
+      model->materials[i]->ownsAmbientMaps = true;
+      model->materials[i]->ownsDiffuseMaps = true;
+      model->materials[i]->ownsSpecularMaps = true;
+      model->materials[i]->ownsNormalMaps = true;
+    } else {
+      for (size_t i = 0; i < config.numAmbientMaps; ++i) {
+        baglDestroyImage(state, &config.ambientMaps[i]);
+      }
+      for (size_t i = 0; i < config.numDiffuseMaps; ++i) {
+        baglDestroyImage(state, &config.diffuseMaps[i]);
+      }
+      for (size_t i = 0; i < config.numSpecularMaps; ++i) {
+        baglDestroyImage(state, &config.specularMaps[i]);
+      }
+      for (size_t i = 0; i < config.numNormalMaps; ++i) {
+        baglDestroyImage(state, &config.normalMaps[i]);
+      }
+    }
+    if (config.ambientMaps) {
+      state->reallocFn(config.ambientMaps, 0);
+    }
+    if (config.diffuseMaps) {
+      state->reallocFn(config.diffuseMaps, 0);
+    }
+    if (config.specularMaps) {
+      state->reallocFn(config.specularMaps, 0);
+    }
+    if (config.normalMaps) {
+      state->reallocFn(config.normalMaps, 0);
+    }
   }
 
   /* Release path root */

@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "glad/glad.h" /* OpenGL */
@@ -201,6 +202,27 @@ void baglProcessFrame(BaglState* state,
   glBindVertexArray(0);
 }
 
+static void baglBindMaterialTextures(BaglImage** images,
+                                     size_t count,
+                                     BaglShader* shader,
+                                     const char* uniformFmt,
+                                     size_t* textureUnit) {
+  if (!images || !shader || !uniformFmt || !textureUnit) {
+    return;
+  }
+  char nameBuffer[256];
+  for (size_t i = 0; i < count; ++i) {
+    glActiveTexture(GL_TEXTURE0 + *textureUnit);
+    glBindTexture(GL_TEXTURE_2D, images[i]->texture);
+    sprintf_s(nameBuffer, 256, uniformFmt, i);
+    GLuint location = glGetUniformLocation(shader->program, nameBuffer);
+    if (location > 0) {
+      glUniform1i(location, *textureUnit);
+    }
+    *textureUnit += 1;
+  }
+}
+
 static void baglDrawModelMesh(BaglState* state,
                               BaglFrame* frame,
                               BaglModel* model,
@@ -214,18 +236,18 @@ static void baglDrawModelMesh(BaglState* state,
   glUseProgram(material->shader->program);
   /* Bind all material data */
   glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING, material->ubo);
-  if (material->diffuseMap) {
-    glActiveTexture(GL_TEXTURE0 + BAGL_DIFFUSE_TEXTURE_UNIT);
-    glBindTexture(GL_TEXTURE_2D, material->diffuseMap->texture);
-  }
-  if (material->specularMap) {
-    glActiveTexture(GL_TEXTURE0 + BAGL_SPECULAR_TEXTURE_UNIT);
-    glBindTexture(GL_TEXTURE_2D, material->specularMap->texture);
-  }
-  if (material->normalMap) {
-    glActiveTexture(GL_TEXTURE0 + BAGL_NORMAL_TEXTURE_UNIT);
-    glBindTexture(GL_TEXTURE_2D, material->normalMap->texture);
-  }
+
+  /* Bind maps and sampler uniforms */
+  size_t textureUnit = 0;
+  baglBindMaterialTextures(material->ambientMaps, material->numAmbientMaps,
+                           material->shader, "ambientMaps[%d]", &textureUnit);
+  baglBindMaterialTextures(material->diffuseMaps, material->numDiffuseMaps,
+                           material->shader, "diffuseMaps[%d]", &textureUnit);
+  baglBindMaterialTextures(material->specularMaps, material->numSpecularMaps,
+                           material->shader, "specularMaps[%d]", &textureUnit);
+  baglBindMaterialTextures(material->normalMaps, material->numNormalMaps,
+                           material->shader, "normalMaps[%d]", &textureUnit);
+
   /* Update and bind camera matrices */
   if (camera->isViewDirty) {
     baglUpdateCameraMatrices(state, camera);

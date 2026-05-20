@@ -20,11 +20,24 @@ typedef struct BaglMaterialConfig {
   } ambient;
   struct {
     float r, g, b;
+  } diffuse;
+  struct {
+    float r, g, b;
   } specular;
   float specularExponent;
-  BaglImage* diffuseMap;
-  BaglImage* specularMap;
-  BaglImage* normalMap;
+
+  const char** ambientFilenames;
+  const char** diffuseFilenames;
+  const char** specularFilenames;
+  const char** normalFilenames;
+  BaglImage** ambientMaps;
+  BaglImage** diffuseMaps;
+  BaglImage** specularMaps;
+  BaglImage** normalMaps;
+  size_t numAmbientMaps;
+  size_t numDiffuseMaps;
+  size_t numSpecularMaps;
+  size_t numNormalMaps;
 
   BaglShader* shader;
   const char* vertexFilename;

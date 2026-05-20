@@ -64,23 +64,25 @@ const static char* BAGL_MODEL_VS_SOURCE =
 
 /* Source code for the textured model fragment shader */
 const static char* BAGL_MODEL_TEXTURED_FS_SOURCE =
-    "#version 420 core                                          \n"
-    "out vec4 color;                                            \n"
-    "in VsOut {                                                 \n"
-    "  vec2 texCoords;                                          \n"
-    "} vsOut;                                                   \n"
-    "layout(std140, binding = 1) uniform Material {             \n"
-    "  vec3 ambient;                                            \n"
-    "  vec3 specular;                                           \n"
-    "  float specularExponent;                                  \n"
-    "} material;                                                \n"
-    "layout(binding = 0) uniform sampler2D diffuseMap;          \n"
-    "layout(binding = 1) uniform sampler2D specularMap;         \n"
-    "layout(binding = 2) uniform sampler2D normalMap;           \n"
-    "void main() {                                              \n"
-    "  vec3 diffuse = texture(diffuseMap, vsOut.texCoords).rgb; \n"
-    "  color = vec4(diffuse + material.ambient, 1.0);           \n"
-    "}                                                            ";
+    "#version 420 core                                              \n"
+    "out vec4 color;                                                \n"
+    "in VsOut {                                                     \n"
+    "  vec2 texCoords;                                              \n"
+    "} vsOut;                                                       \n"
+    "layout(std140, binding = 1) uniform Material {                 \n"
+    "  vec3 ambient;                                                \n"
+    "  vec3 diffuse;                                                \n"
+    "  vec3 specular;                                               \n"
+    "  float specularExponent;                                      \n"
+    "} material;                                                    \n"
+    "uniform sampler2D ambientMaps[];                               \n"
+    "uniform sampler2D diffuseMaps[];                               \n"
+    "uniform sampler2D specularMaps[];                              \n"
+    "uniform sampler2D normalMaps[];                                \n"
+    "void main() {                                                  \n"
+    "  vec3 diffuse = texture(diffuseMaps[0], vsOut.texCoords).rgb; \n"
+    "  color = vec4(diffuse + material.ambient, 1.0);               \n"
+    "}                                                                ";
 
 /* Source code for the untextured (colored) model fragment shader */
 const static char* BAGL_MODEL_COLORED_FS_SOURCE =
