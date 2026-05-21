@@ -194,7 +194,7 @@ void baglProcessFrame(BaglState* state,
   glUseProgram(shader->program);
   /* Bind all color attachments as textures */
   for (size_t i = 0; i < src->numColorAttachments; ++i) {
-    glActiveTexture(GL_TEXTURE0 + BAGL_COLOR_TEXTURE_UNIT + i);
+    glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, src->colorAttachments[i]->texture);
   }
   /* Draw to the framebuffer */
@@ -235,25 +235,42 @@ static void baglDrawModelMesh(BaglState* state,
   /* TODO: Stencil tests */
   glUseProgram(material->shader->program);
   /* Bind all material data */
-  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_BINDING, material->ubo);
+  int index = glGetUniformBlockIndex(material->shader->program,
+                                     BAGL_MATERIAL_UNIFORM_NAME);
+  if (index >= 0) {
+    glUniformBlockBinding(material->shader->program, index,
+                          BAGL_MATERIAL_UNIFORM_BIND_POINT);
+    glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_UNIFORM_BIND_POINT,
+                     material->ubo);
+  }
 
   /* Bind maps and sampler uniforms */
   size_t textureUnit = 0;
   baglBindMaterialTextures(material->ambientMaps, material->numAmbientMaps,
-                           material->shader, "ambientMaps[%d]", &textureUnit);
+                           material->shader, BAGL_AMBIENT_UNIFORM_NAME,
+                           &textureUnit);
   baglBindMaterialTextures(material->diffuseMaps, material->numDiffuseMaps,
-                           material->shader, "diffuseMaps[%d]", &textureUnit);
+                           material->shader, BAGL_DIFFUSE_UNIFORM_NAME,
+                           &textureUnit);
   baglBindMaterialTextures(material->specularMaps, material->numSpecularMaps,
-                           material->shader, "specularMaps[%d]", &textureUnit);
+                           material->shader, BAGL_SPECULAR_UNIFORM_NAME,
+                           &textureUnit);
   baglBindMaterialTextures(material->normalMaps, material->numNormalMaps,
-                           material->shader, "normalMaps[%d]", &textureUnit);
+                           material->shader, BAGL_NORMAL_UNIFORM_NAME,
+                           &textureUnit);
 
   /* Update and bind camera matrices */
   if (camera->isViewDirty) {
     baglUpdateCameraMatrices(state, camera);
   }
-  glBindBuffer(GL_UNIFORM_BUFFER, camera->ubo);
-  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATRIX_BINDING, camera->ubo);
+  index = glGetUniformBlockIndex(material->shader->program,
+                                 BAGL_CAMERA_UNIFORM_NAME);
+  if (index >= 0) {
+    glUniformBlockBinding(material->shader->program, index,
+                          BAGL_CAMERA_UNIFORM_BIND_POINT);
+    glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_CAMERA_UNIFORM_BIND_POINT,
+                     camera->ubo);
+  }
 
   /* Bind model matrix */
   if (model->isTransformDirty) {
@@ -335,7 +352,7 @@ void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
     glUseProgram(shader->program);
     /* Bind all color attachments as textures */
     for (size_t i = 0; i < frame->numColorAttachments; ++i) {
-      glActiveTexture(GL_TEXTURE0 + BAGL_COLOR_TEXTURE_UNIT + i);
+      glActiveTexture(GL_TEXTURE0 + i);
       glBindTexture(GL_TEXTURE_2D, frame->colorAttachments[i]->texture);
     }
     /* Draw to the framebuffer */

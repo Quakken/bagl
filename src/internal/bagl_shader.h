@@ -11,24 +11,26 @@
 
 typedef unsigned int GLuint;
 
-/* Uniform buffer index to bind matrices to */
-const static int BAGL_MATRIX_BINDING = 0;
-/* Uniform buffer index to bind materials to */
-const static int BAGL_MATERIAL_BINDING = 1;
-/* Uniform buffer index to bind lights to */
-const static int BAGL_LIGHTS_BINDING = 2;
-
-/* Texture unit reserved for diffuse textures */
-const static int BAGL_DIFFUSE_TEXTURE_UNIT = 0;
-/* Texture unit reserved to specular textures */
-const static int BAGL_SPECULAR_TEXTURE_UNIT = 1;
-/* Texture unit reserved for normal textures */
-const static int BAGL_NORMAL_TEXTURE_UNIT = 2;
-/* First texture unit reserved for color textures */
-const static int BAGL_COLOR_TEXTURE_UNIT = 3;
-
 /* Name of the model matrix uniform in shaders */
 const static char* BAGL_MODEL_UNIFORM_NAME = "model";
+/* Name of the material uniform block in shaders */
+const static char* BAGL_MATERIAL_UNIFORM_NAME = "Material";
+/* Name of the camera uniform block in shaders */
+const static char* BAGL_CAMERA_UNIFORM_NAME = "Camera";
+
+/* Binding point used by the material uniform block */
+const static unsigned int BAGL_MATERIAL_UNIFORM_BIND_POINT = 0;
+/* Binding point used by the camera uniform block */
+const static unsigned int BAGL_CAMERA_UNIFORM_BIND_POINT = 1;
+
+/* Name of the uniform array that holds ambient texture data */
+const static char* BAGL_AMBIENT_UNIFORM_NAME = "ambientMaps[%d]";
+/* Name of the uniform array that holds diffuse texture data */
+const static char* BAGL_DIFFUSE_UNIFORM_NAME = "diffuseMaps[%d]";
+/* Name of the uniform array that holds specular texture data */
+const static char* BAGL_SPECULAR_UNIFORM_NAME = "specularMaps[%d]";
+/* Name of the uniform array that holds normal texture data */
+const static char* BAGL_NORMAL_UNIFORM_NAME = "normalMaps[%d]";
 
 typedef struct BaglShaderStage {
   BaglStageType type;
