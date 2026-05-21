@@ -15,6 +15,7 @@
 /* Default material configuration used when no alternative is provided */
 const static BaglMaterialConfig BAGL_DEFAULT_MATERIAL_CONFIG = {
     .ambient = {1.0f, 1.0f, 1.0f},
+    .diffuse = {1.0f, 1.0f, 1.0f},
     .specular = {1.0f, 1.0f, 1.0f},
     .specularExponent = 200.0f,
 };
@@ -187,6 +188,7 @@ BaglMaterial* baglCreateMaterial(BaglState* state,
   /* Describe UBO contents */
   BaglMaterialLayout layout = {
       .ambient = {config->ambient.r, config->ambient.g, config->ambient.b},
+      .diffuse = {config->diffuse.r, config->diffuse.g, config->diffuse.b},
       .specular = {config->specular.r, config->specular.g, config->specular.b},
       .specularExponent = config->specularExponent,
   };

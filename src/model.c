@@ -328,9 +328,23 @@ static void baglLoadMaterials(BaglState* state,
       config.normalMaps[j] = baglLoadImage(state, root);
       baglResetPathRoot(root, lastDirOffs);
     }
-    // TODO: Read this from material
-    config.specularExponent = 1;
-    // TODO: Ambient, diffuse, specular colors
+
+    struct aiColor4D ambientColor = {};
+    struct aiColor4D diffuseColor = {};
+    struct aiColor4D specColor = {};
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &ambientColor);
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &specColor);
+    aiGetMaterialFloat(material, AI_MATKEY_SHININESS, &config.specularExponent);
+    config.ambient.r = ambientColor.r;
+    config.ambient.g = ambientColor.g;
+    config.ambient.b = ambientColor.b;
+    config.diffuse.r = diffuseColor.r;
+    config.diffuse.g = diffuseColor.g;
+    config.diffuse.b = diffuseColor.b;
+    config.specular.r = specColor.r;
+    config.specular.g = specColor.g;
+    config.specular.b = specColor.b;
 
     model->materials[i] = baglCreateMaterial(state, &config);
     /* Free configuration and transfer ownership to material */

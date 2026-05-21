@@ -50,6 +50,8 @@ const static char* BAGL_MODEL_VS_SOURCE =
     "layout(location = 2) in vec2 texCoords;                                \n"
     "out VsOut {                                                            \n"
     "  vec2 texCoords;                                                      \n"
+    "  vec3 fragPos;                                                        \n"
+    "  vec3 fragNormal;                                                     \n"
     "} vsOut;                                                               \n"
     "layout(std140, binding = 0) uniform Camera {                           \n"
     "  mat4 view;                                                           \n"
@@ -60,6 +62,8 @@ const static char* BAGL_MODEL_VS_SOURCE =
     "  gl_Position = camera.projection * camera.view * model * vec4(position, "
     "                  1.0);                                                \n"
     "  vsOut.texCoords = texCoords;                                         \n"
+    "  vsOut.fragPos = position;                                            \n"
+    "  vsOut.fragNormal = normal;                                           \n"
     "};                                                                       ";
 
 /* Source code for the textured model fragment shader */
@@ -68,6 +72,8 @@ const static char* BAGL_MODEL_TEXTURED_FS_SOURCE =
     "out vec4 color;                                                \n"
     "in VsOut {                                                     \n"
     "  vec2 texCoords;                                              \n"
+    "  vec3 fragPos;                                                \n"
+    "  vec3 fragNormal;                                             \n"
     "} vsOut;                                                       \n"
     "layout(std140, binding = 1) uniform Material {                 \n"
     "  vec3 ambient;                                                \n"
@@ -79,9 +85,19 @@ const static char* BAGL_MODEL_TEXTURED_FS_SOURCE =
     "uniform sampler2D diffuseMaps[];                               \n"
     "uniform sampler2D specularMaps[];                              \n"
     "uniform sampler2D normalMaps[];                                \n"
+    "const vec3 lightPos = vec3(0, 5, 5); // TODO: Make uniform!    \n"
+    "vec3 ambient() {                                               \n"
+    "  return material.ambient;                                     \n"
+    "}                                                              \n"
+    "vec3 diffuse() {                                               \n"
+    "  vec3 norm = normalize(vsOut.fragNormal);                     \n"
+    "  vec3 lightDir = normalize(lightPos - vsOut.fragPos);         \n"
+    "  float diffuseStrength = max(dot(lightDir, norm), 0.0);       \n"
+    "  vec3 sampled = texture(diffuseMaps[0], vsOut.texCoords).rgb; \n"
+    "  return diffuseStrength * material.diffuse * sampled;         \n"
+    "}                                                              \n"
     "void main() {                                                  \n"
-    "  vec3 diffuse = texture(diffuseMaps[0], vsOut.texCoords).rgb; \n"
-    "  color = vec4(diffuse + material.ambient, 1.0);               \n"
+    "  color = vec4(ambient() + diffuse(), 1.0);                    \n"
     "}                                                                ";
 
 /* Source code for the untextured (colored) model fragment shader */
@@ -90,6 +106,8 @@ const static char* BAGL_MODEL_COLORED_FS_SOURCE =
     "out vec4 color;                                    \n"
     "in VsOut {                                         \n"
     "  vec2 texCoords;                                  \n"
+    "  vec3 fragPos;                                    \n"
+    "  vec3 fragNormal;                                 \n"
     "} vsOut;                                           \n"
     "layout(std140, binding = 1) uniform Material {     \n"
     "  vec3 ambient;                                    \n"
