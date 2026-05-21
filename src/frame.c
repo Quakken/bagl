@@ -202,7 +202,8 @@ void baglProcessFrame(BaglState* state,
   glBindVertexArray(0);
 }
 
-static void baglBindMaterialTextures(BaglImage** images,
+static void baglBindMaterialTextures(BaglState* state,
+                                     BaglImage** images,
                                      size_t count,
                                      BaglShader* shader,
                                      const char* uniformFmt,
@@ -215,10 +216,7 @@ static void baglBindMaterialTextures(BaglImage** images,
     glActiveTexture(GL_TEXTURE0 + *textureUnit);
     glBindTexture(GL_TEXTURE_2D, images[i]->texture);
     sprintf_s(nameBuffer, 256, uniformFmt, i);
-    GLuint location = glGetUniformLocation(shader->program, nameBuffer);
-    if (location > 0) {
-      glUniform1i(location, *textureUnit);
-    }
+    baglSetUniformInt(state, shader, nameBuffer, *textureUnit);
     *textureUnit += 1;
   }
 }
@@ -234,28 +232,25 @@ static void baglDrawModelMesh(BaglState* state,
   }
   /* TODO: Stencil tests */
   glUseProgram(material->shader->program);
-  /* Bind all material data */
-  int index = glGetUniformBlockIndex(material->shader->program,
-                                     BAGL_MATERIAL_UNIFORM_NAME);
-  if (index >= 0) {
-    glUniformBlockBinding(material->shader->program, index,
-                          BAGL_MATERIAL_UNIFORM_BIND_POINT);
-    glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_UNIFORM_BIND_POINT,
-                     material->ubo);
-  }
+
+  /* Bind material buffer */
+  baglSetUniformBlock(state, material->shader, BAGL_MATERIAL_UNIFORM_NAME,
+                      BAGL_MATERIAL_UNIFORM_BIND_POINT);
+  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_MATERIAL_UNIFORM_BIND_POINT,
+                   material->ubo);
 
   /* Bind maps and sampler uniforms */
   size_t textureUnit = 0;
-  baglBindMaterialTextures(material->ambientMaps, material->numAmbientMaps,
-                           material->shader, BAGL_AMBIENT_UNIFORM_NAME,
-                           &textureUnit);
-  baglBindMaterialTextures(material->diffuseMaps, material->numDiffuseMaps,
-                           material->shader, BAGL_DIFFUSE_UNIFORM_NAME,
-                           &textureUnit);
-  baglBindMaterialTextures(material->specularMaps, material->numSpecularMaps,
-                           material->shader, BAGL_SPECULAR_UNIFORM_NAME,
-                           &textureUnit);
-  baglBindMaterialTextures(material->normalMaps, material->numNormalMaps,
+  baglBindMaterialTextures(state, material->ambientMaps,
+                           material->numAmbientMaps, material->shader,
+                           BAGL_AMBIENT_UNIFORM_NAME, &textureUnit);
+  baglBindMaterialTextures(state, material->diffuseMaps,
+                           material->numDiffuseMaps, material->shader,
+                           BAGL_DIFFUSE_UNIFORM_NAME, &textureUnit);
+  baglBindMaterialTextures(state, material->specularMaps,
+                           material->numSpecularMaps, material->shader,
+                           BAGL_SPECULAR_UNIFORM_NAME, &textureUnit);
+  baglBindMaterialTextures(state, material->normalMaps, material->numNormalMaps,
                            material->shader, BAGL_NORMAL_UNIFORM_NAME,
                            &textureUnit);
 
@@ -263,23 +258,19 @@ static void baglDrawModelMesh(BaglState* state,
   if (camera->isViewDirty) {
     baglUpdateCameraMatrices(state, camera);
   }
-  index = glGetUniformBlockIndex(material->shader->program,
-                                 BAGL_CAMERA_UNIFORM_NAME);
-  if (index >= 0) {
-    glUniformBlockBinding(material->shader->program, index,
-                          BAGL_CAMERA_UNIFORM_BIND_POINT);
-    glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_CAMERA_UNIFORM_BIND_POINT,
-                     camera->ubo);
-  }
+  baglSetUniformBlock(state, material->shader, BAGL_CAMERA_UNIFORM_NAME,
+                      BAGL_CAMERA_UNIFORM_BIND_POINT);
+  glBindBufferBase(GL_UNIFORM_BUFFER, BAGL_CAMERA_UNIFORM_BIND_POINT,
+                   camera->ubo);
 
   /* Bind model matrix */
   if (model->isTransformDirty) {
     baglGenTransform(&model->transform[0], &model->transformConfig);
     model->isTransformDirty = false;
   }
-  glUniformMatrix4fv(
-      glGetUniformLocation(material->shader->program, BAGL_MODEL_UNIFORM_NAME),
-      1, false, &model->transform[0]);
+  int modelLocation =
+      glGetUniformLocation(material->shader->program, BAGL_MODEL_UNIFORM_NAME);
+  glUniformMatrix4fv(modelLocation, 1, false, &model->transform[0]);
 
   /* Draw the model */
   glBindVertexArray(mesh->vao);

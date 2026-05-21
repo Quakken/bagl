@@ -7,6 +7,8 @@
 #ifndef BAGL_SHADER_H
 #define BAGL_SHADER_H
 
+#include <stdbool.h> /* bool */
+
 /* Forward */
 
 typedef struct BaglState BaglState;
@@ -83,6 +85,70 @@ BaglShaderStage* baglCompileShaderStage(BaglState* state,
  * @return Pointer to the shader, or NULL if shader could not be created.
  */
 BaglShader* baglCreateShader(BaglState* state, BaglShaderConfig* config);
+
+/**
+ * @brief Sets the value of a shader uniform.
+ * @param shader Shader to set uniform for.
+ * @param name Name of the uniform to set.
+ * @param value Value to assign.
+ */
+bool baglSetUniformInt(BaglState* state,
+                       BaglShader* shader,
+                       const char* name,
+                       int value);
+/**
+ * @brief Sets the value of a shader uniform.
+ * @param shader Shader to set uniform for.
+ * @param name Name of the uniform to set.
+ * @param value Value to assign.
+ */
+bool baglSetUniformFloat(BaglState* state,
+                         BaglShader* shader,
+                         const char* name,
+                         float value);
+
+/**
+ * @brief Sets the value of a shader uniform.
+ * @param shader Shader to set uniform for.
+ * @param name Name of the uniform to set.
+ * @param v1 First value to assign.
+ * @param v2 Second value to assign.
+ */
+bool baglSetUniformVec2(BaglState* state,
+                        BaglShader* shader,
+                        const char* name,
+                        float v1,
+                        float v2);
+/**
+ * @brief Sets the value of a shader uniform.
+ * @param shader Shader to set uniform for.
+ * @param name Name of the uniform to set.
+ * @param v1 First value to assign.
+ * @param v2 Second value to assign.
+ * @param v3 Third value to assign.
+ */
+bool baglSetUniformVec3(BaglState* state,
+                        BaglShader* shader,
+                        const char* name,
+                        float v1,
+                        float v2,
+                        float v3);
+/**
+ * @brief Sets the value of a shader uniform.
+ * @param shader Shader to set uniform for.
+ * @param name Name of the uniform to set.
+ * @param v1 First value to assign.
+ * @param v2 Second value to assign.
+ * @param v3 Third value to assign.
+ * @param v4 Fourth value to assign.
+ */
+bool baglSetUniformVec4(BaglState* state,
+                        BaglShader* shader,
+                        const char* name,
+                        float v1,
+                        float v2,
+                        float v3,
+                        float v4);
 
 /**
  * @brief Destroys a shader stage.

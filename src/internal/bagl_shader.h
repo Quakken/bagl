@@ -41,4 +41,9 @@ typedef struct BaglShader {
   GLuint program;
 } BaglShader;
 
+bool baglSetUniformBlock(BaglState* state,
+                         BaglShader* shader,
+                         const char* name,
+                         unsigned int bindingPoint);
+
 #endif

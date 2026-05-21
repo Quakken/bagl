@@ -191,6 +191,102 @@ BaglShader* baglCreateShader(BaglState* state, BaglShaderConfig* config) {
   return shader;
 }
 
+bool baglSetUniformInt(BaglState* state,
+                       BaglShader* shader,
+                       const char* name,
+                       int value) {
+  if (!state || !shader || !name) {
+    return false;
+  }
+  int location = glGetUniformLocation(shader->program, name);
+  if (location < 0) {
+    return false;
+  }
+  glUseProgram(shader->program);
+  glUniform1i(location, value);
+  return true;
+}
+bool baglSetUniformFloat(BaglState* state,
+                         BaglShader* shader,
+                         const char* name,
+                         float value) {
+  if (!state || !shader || !name) {
+    return false;
+  }
+  int location = glGetUniformLocation(shader->program, name);
+  if (location < 0) {
+    return false;
+  }
+  glUseProgram(shader->program);
+  glUniform1f(location, value);
+  return true;
+}
+
+bool baglSetUniformVec2(BaglState* state,
+                        BaglShader* shader,
+                        const char* name,
+                        float v1,
+                        float v2) {
+  if (!state || !shader || !name) {
+    return false;
+  }
+  int location = glGetUniformLocation(shader->program, name);
+  if (location < 0) {
+    return false;
+  }
+  glUseProgram(shader->program);
+  glUniform2f(location, v1, v2);
+  return true;
+}
+bool baglSetUniformVec3(BaglState* state,
+                        BaglShader* shader,
+                        const char* name,
+                        float v1,
+                        float v2,
+                        float v3) {
+  if (!state || !shader || !name) {
+    return false;
+  }
+  int location = glGetUniformLocation(shader->program, name);
+  if (location < 0) {
+    return false;
+  }
+  glUseProgram(shader->program);
+  glUniform3f(location, v1, v2, 3);
+  return true;
+}
+bool baglSetUniformVec4(BaglState* state,
+                        BaglShader* shader,
+                        const char* name,
+                        float v1,
+                        float v2,
+                        float v3,
+                        float v4) {
+  if (!state || !shader || !name) {
+    return false;
+  }
+  int location = glGetUniformLocation(shader->program, name);
+  if (location < 0) {
+    return false;
+  }
+  glUseProgram(shader->program);
+  glUniform4f(location, v1, v2, v3, v4);
+  return true;
+}
+
+bool baglSetUniformBlock(BaglState* state,
+                         BaglShader* shader,
+                         const char* name,
+                         unsigned int bindingPoint) {
+  /* Bind all material data */
+  int index = glGetUniformBlockIndex(shader->program, name);
+  if (index < 0) {
+    return false;
+  }
+  glUniformBlockBinding(shader->program, index, bindingPoint);
+  return true;
+}
+
 void baglDestroyShaderStage(BaglState* state, BaglShaderStage** stage) {
   if (!state || !stage || !(*stage)) {
     return;
