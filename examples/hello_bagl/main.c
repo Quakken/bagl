@@ -51,8 +51,6 @@ int main() {
   struct {
     float x, y, z;
   } camPos;
-  camPos.x = camPos.y = camPos.z = 0.0f;
-  float ticks = 0;
 
   /* Render loop */
   while (!baglShouldClose(state)) {
@@ -61,14 +59,13 @@ int main() {
     baglClearFrame(state, frame, BAGL_ATTACHMENT_DEPTH_STENCIL, 0, 0, 0, 0);
 
     /* Rotate the camera around the center of the scene */
-    float s = sinf(ticks);
-    float c = cosf(ticks);
+    float s = sinf(baglGetTime());
+    float c = cosf(baglGetTime());
     camPos.x = c * 2.0f;
     camPos.z = -s * 2.0f;
     float angle = -atan2f(camPos.x, camPos.z) * 180.0f / M_PI;
     baglSetCameraPosition(state, camera, camPos.x, camPos.y, camPos.z);
     baglSetCameraRotation(state, camera, 0, angle, 0);
-    ticks += 0.00025f;
 
     /* Draw the model */
     baglDraw(state, frame, gnome, camera);

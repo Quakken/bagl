@@ -203,6 +203,7 @@ void baglProcessFrame(BaglState* state,
     sprintf_s(nameBuffer, sizeof(nameBuffer), BAGL_PROCESS_TEXTURE_NAME, i);
     baglSetUniformInt(state, shader, nameBuffer, i);
   }
+  baglSetUniformFloat(state, shader, BAGL_TIME_UNIFORM_NAME, baglGetTime());
   /* Draw to the framebuffer */
   glDrawArrays(GL_TRIANGLES, 0, 3);
   glBindVertexArray(0);
@@ -269,6 +270,10 @@ static void baglSetModelUniforms(BaglState* state,
   int modelLocation =
       glGetUniformLocation(material->shader->program, BAGL_MODEL_UNIFORM_NAME);
   glUniformMatrix4fv(modelLocation, 1, false, &model->transform[0]);
+
+  /* Bind time */
+  baglSetUniformFloat(state, material->shader, BAGL_TIME_UNIFORM_NAME,
+                      baglGetTime());
 }
 
 static void baglDrawModelMesh(BaglState* state,
@@ -345,11 +350,9 @@ void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
     int height = frame->colorAttachments[0]->height;
 
     /* Just copy framebuffer contents */
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, frame->fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, width, height, 0, 0, baglGetViewportWidth(state),
-                      baglGetViewportHeight(state), GL_COLOR_BUFFER_BIT,
-                      GL_LINEAR);
+    glBlitNamedFramebuffer(
+        frame->fbo, 0, 0, 0, width, height, 0, 0, baglGetViewportWidth(state),
+        baglGetViewportHeight(state), GL_COLOR_BUFFER_BIT, GL_LINEAR);
   } else {
     /* Bind resources */
     glBindVertexArray(state->emptyVAO);
@@ -366,6 +369,8 @@ void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
       sprintf_s(nameBuffer, sizeof(nameBuffer), BAGL_PROCESS_TEXTURE_NAME, i);
       baglSetUniformInt(state, shader, nameBuffer, i);
     }
+    baglSetUniformFloat(state, shader, BAGL_TIME_UNIFORM_NAME, baglGetTime());
+
     /* Draw to the framebuffer */
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glBindVertexArray(0);

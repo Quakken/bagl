@@ -32,7 +32,7 @@ const static BaglConfig BAGL_CONFIG_DEFAULT = {
 /* Source code for the fullscreen vertex shader */
 const static char* BAGL_FULLSCREEN_VS_SOURCE =
     "#version 410 core                    \n"
-    "out vec2 uv;                         \n"
+    "layout(location = 0) out vec2 uv;    \n"
     "void main() {                        \n"
     "  vec2 pos = vec2(                   \n"
     "    (gl_VertexID == 1) ? 3.0 : -1.0, \n"
@@ -86,8 +86,10 @@ const static char* BAGL_MODEL_TEXTURED_FS_SOURCE =
     "uniform sampler2D specularMaps[];                              \n"
     "uniform sampler2D normalMaps[];                                \n"
     "const vec3 lightPos = vec3(0, 5, 5); // TODO: Make uniform!    \n"
+    "const vec3 defaultAmbient = vec3(0.015, 0.015, 0.02);          \n"
     "vec3 ambient() {                                               \n"
-    "  return material.ambient;                                     \n"
+    "  vec3 sampled = texture(diffuseMaps[0], vsOut.texCoords).rgb; \n"
+    "  return (material.ambient + defaultAmbient) * sampled;        \n"
     "}                                                              \n"
     "vec3 diffuse() {                                               \n"
     "  vec3 norm = normalize(vsOut.fragNormal);                     \n"
@@ -157,8 +159,12 @@ BaglState* baglCreateState(const BaglConfig* config) {
   return state;
 }
 
-void baglPollEvents() {
+void baglPollEvents(void) {
   glfwPollEvents();
+}
+
+float baglGetTime(void) {
+  return glfwGetTime();
 }
 
 void baglDestroyState(BaglState** state) {

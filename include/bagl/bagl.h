@@ -92,6 +92,12 @@ BaglState* baglCreateState(const BaglConfig* config);
 void baglPollEvents(void);
 
 /**
+ * @brief Returns the amount of time since bagl was initialized.
+ * @return Time since bagl was initialized.
+ */
+float baglGetTime(void);
+
+/**
  * @brief Destroys a bagl state, invalidating it and releasing all associated
  * resources.
  * @param state State to destroy.
