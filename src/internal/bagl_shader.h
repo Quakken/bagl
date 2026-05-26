@@ -23,6 +23,8 @@ const static unsigned int BAGL_MATERIAL_UNIFORM_BIND_POINT = 0;
 /* Binding point used by the camera uniform block */
 const static unsigned int BAGL_CAMERA_UNIFORM_BIND_POINT = 1;
 
+/* Name of the uniform array that holds color data for baglProcess operations */
+const static char* BAGL_PROCESS_TEXTURE_NAME = "colorMaps[%d]";
 /* Name of the uniform array that holds ambient texture data */
 const static char* BAGL_AMBIENT_UNIFORM_NAME = "ambientMaps[%d]";
 /* Name of the uniform array that holds diffuse texture data */

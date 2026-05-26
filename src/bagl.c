@@ -32,7 +32,7 @@ const static BaglConfig BAGL_CONFIG_DEFAULT = {
 /* Source code for the fullscreen vertex shader */
 const static char* BAGL_FULLSCREEN_VS_SOURCE =
     "#version 410 core                    \n"
-    "layout(location = 0) out vec2 uv;    \n"
+    "out vec2 uv;                         \n"
     "void main() {                        \n"
     "  vec2 pos = vec2(                   \n"
     "    (gl_VertexID == 1) ? 3.0 : -1.0, \n"

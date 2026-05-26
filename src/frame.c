@@ -192,10 +192,16 @@ void baglProcessFrame(BaglState* state,
   glBindVertexArray(state->emptyVAO);
   glBindFramebuffer(GL_FRAMEBUFFER, dest->fbo);
   glUseProgram(shader->program);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_STENCIL_TEST);
+
   /* Bind all color attachments as textures */
+  char nameBuffer[256];
   for (size_t i = 0; i < src->numColorAttachments; ++i) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, src->colorAttachments[i]->texture);
+    sprintf_s(nameBuffer, sizeof(nameBuffer), BAGL_PROCESS_TEXTURE_NAME, i);
+    baglSetUniformInt(state, shader, nameBuffer, i);
   }
   /* Draw to the framebuffer */
   glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -215,24 +221,16 @@ static void baglBindMaterialTextures(BaglState* state,
   for (size_t i = 0; i < count; ++i) {
     glActiveTexture(GL_TEXTURE0 + *textureUnit);
     glBindTexture(GL_TEXTURE_2D, images[i]->texture);
-    sprintf_s(nameBuffer, 256, uniformFmt, i);
+    sprintf_s(nameBuffer, sizeof(nameBuffer), uniformFmt, i);
     baglSetUniformInt(state, shader, nameBuffer, *textureUnit);
     *textureUnit += 1;
   }
 }
 
-static void baglDrawModelMesh(BaglState* state,
-                              BaglFrame* frame,
-                              BaglModel* model,
-                              BaglMesh* mesh,
-                              BaglMaterial* material,
-                              BaglCamera* camera) {
-  if (!state || !frame || !model || !mesh || !material || !camera) {
-    return;
-  }
-  /* TODO: Stencil tests */
-  glUseProgram(material->shader->program);
-
+static void baglSetModelUniforms(BaglState* state,
+                                 BaglModel* model,
+                                 BaglMaterial* material,
+                                 BaglCamera* camera) {
   /* Bind material buffer */
   baglSetUniformBlock(state, material->shader, BAGL_MATERIAL_UNIFORM_NAME,
                       BAGL_MATERIAL_UNIFORM_BIND_POINT);
@@ -271,6 +269,22 @@ static void baglDrawModelMesh(BaglState* state,
   int modelLocation =
       glGetUniformLocation(material->shader->program, BAGL_MODEL_UNIFORM_NAME);
   glUniformMatrix4fv(modelLocation, 1, false, &model->transform[0]);
+}
+
+static void baglDrawModelMesh(BaglState* state,
+                              BaglFrame* frame,
+                              BaglModel* model,
+                              BaglMesh* mesh,
+                              BaglMaterial* material,
+                              BaglCamera* camera) {
+  if (!state || !frame || !model || !mesh || !material || !camera) {
+    return;
+  }
+  /* TODO: Stencil tests */
+  glUseProgram(material->shader->program);
+
+  /* Bind uniforms */
+  baglSetModelUniforms(state, model, material, camera);
 
   /* Draw the model */
   glBindVertexArray(mesh->vao);
@@ -341,10 +355,16 @@ void baglPresent(BaglState* state, const BaglFrame* frame, BaglShader* shader) {
     glBindVertexArray(state->emptyVAO);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader->program);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+
     /* Bind all color attachments as textures */
+    char nameBuffer[256];
     for (size_t i = 0; i < frame->numColorAttachments; ++i) {
       glActiveTexture(GL_TEXTURE0 + i);
       glBindTexture(GL_TEXTURE_2D, frame->colorAttachments[i]->texture);
+      sprintf_s(nameBuffer, sizeof(nameBuffer), BAGL_PROCESS_TEXTURE_NAME, i);
+      baglSetUniformInt(state, shader, nameBuffer, i);
     }
     /* Draw to the framebuffer */
     glDrawArrays(GL_TRIANGLES, 0, 3);

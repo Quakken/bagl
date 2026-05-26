@@ -43,6 +43,11 @@ int main() {
   BaglCamera* camera = baglCreateCamera(state, NULL);
   baglSetCameraPosition(state, camera, 0, 0, 10);
 
+  BaglShaderConfig invertCfg = {
+      .fragmentFilename = "../assets/invert.frag",
+  };
+  BaglShader* invert = baglCreateShader(state, &invertCfg);
+
   struct {
     float x, y, z;
   } camPos;
@@ -67,11 +72,12 @@ int main() {
 
     /* Draw the model */
     baglDraw(state, frame, gnome, camera);
-    baglPresent(state, frame, NULL);
+    baglPresent(state, frame, invert);
     baglPollEvents();
   }
 
   /* Cleanup */
+  baglDestroyShader(state, &invert);
   baglDestroyModel(state, &gnome);
   baglDestroyCamera(state, &camera);
   baglDestroyFrame(state, &frame);

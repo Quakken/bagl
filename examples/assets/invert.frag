@@ -1,10 +1,10 @@
-#version 420 core
+#version 410 core
 
-layout(location = 0) in vec2 uv;
-layout(location = 0) out vec4 fragColor;
+in vec2 uv;
+out vec4 fragColor;
 
-layout(binding = 3) uniform sampler2D color0;
+uniform sampler2D colorMaps[];
 
 void main() {
-  fragColor = vec4(1.0) - texture(color0, uv);
+  fragColor = vec4(1.0) - texture(colorMaps[0], uv);
 }
